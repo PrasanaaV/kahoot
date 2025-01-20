@@ -157,7 +157,7 @@ class HostFragment : Fragment() {
                         // Clear local questions
                         viewModel.clearQuestions()
 
-                        // Navigate to HostLobbyFragment, passing quizId & PIN
+                        // Navigate to HostLobbyFragment (which will show the PIN)
                         val lobbyFragment = HostLobbyFragment.newInstance(quizId, pin)
                         parentFragmentManager.beginTransaction()
                             .replace(R.id.container, lobbyFragment)
