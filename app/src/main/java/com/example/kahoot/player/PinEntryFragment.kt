@@ -54,10 +54,12 @@ class PinEntryFragment : Fragment() {
                 val quizId = quizDoc.id
                 val status = quizDoc.getString("status") ?: ""
 
-                if (status == "open_for_join" || status == "started") {
+                // ALLOW JOIN ONLY IF STATUS == "open_for_join"
+                if (status == "open_for_join") {
                     joinQuiz(quizId)
                 } else {
-                    Toast.makeText(requireContext(),
+                    Toast.makeText(
+                        requireContext(),
                         "Quiz not open for joining (Status: $status)",
                         Toast.LENGTH_SHORT
                     ).show()
