@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "881450519699",
+    "project_id": "kahoot-8a72d",
+    "storage_bucket": "kahoot-8a72d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:881450519699:android:fdd5046e0fa96c84631166",
+        "android_client_info": {
+          "package_name": "com.example.kahoot"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcp3UZCzFOXmpyo3hzea8cMNXAk9PxdnE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
