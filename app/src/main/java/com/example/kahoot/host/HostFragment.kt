@@ -24,11 +24,9 @@ class HostFragment : Fragment() {
     private lateinit var addQuestionButton: Button
     private lateinit var setQuizButton: Button
     private lateinit var questionsListView: ListView
-    private lateinit var pinTextView: TextView
     private lateinit var timeLimitInput: EditText
 
     private lateinit var questionsAdapter: ArrayAdapter<String>
-    private var quizId: String = ""
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -44,6 +42,7 @@ class HostFragment : Fragment() {
         addQuestionButton.setOnClickListener { handleAddQuestion() }
         setQuizButton.setOnClickListener { handleCreateQuiz() }
 
+        // Sign in anonymously (if not already signed in)
         signInAnonymously()
 
         return view
@@ -61,7 +60,6 @@ class HostFragment : Fragment() {
         addQuestionButton = view.findViewById(R.id.addQuestionButton)
         setQuizButton = view.findViewById(R.id.setQuizButton)
         questionsListView = view.findViewById(R.id.questionsListView)
-        pinTextView = view.findViewById(R.id.pinTextView)
         timeLimitInput = view.findViewById(R.id.timeLimitInput)
     }
 
@@ -87,7 +85,8 @@ class HostFragment : Fragment() {
     private fun setupObservers() {
         viewModel.questions.observe(viewLifecycleOwner) { questions ->
             questionsAdapter.clear()
-            questionsAdapter.addAll(questions.map { it.questionText })
+            val questionTitles = questions.map { it.questionText }
+            questionsAdapter.addAll(questionTitles)
             questionsAdapter.notifyDataSetChanged()
         }
     }
@@ -95,7 +94,7 @@ class HostFragment : Fragment() {
     private fun signInAnonymously() {
         firebaseRepository.signInAnonymously(
             onSuccess = {
-                Toast.makeText(requireContext(), "Signed in successfully", Toast.LENGTH_SHORT).show()
+                // Already signed in or newly signed in
             },
             onFailure = { e ->
                 Toast.makeText(requireContext(), "Sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -132,15 +131,16 @@ class HostFragment : Fragment() {
     }
 
     private fun handleCreateQuiz() {
-        val questions = viewModel.questions.value ?: return
+        val questions = viewModel.questions.value ?: emptyList()
         if (questions.isEmpty()) {
             Toast.makeText(requireContext(), "Add at least one question", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Generate a unique PIN, then create the quiz in Firestore
         firebaseRepository.generateUniquePin(
             onSuccess = { pin ->
-                quizId = firebaseRepository.generateQuizId()
+                val quizId = firebaseRepository.generateQuizId()
                 val quizData = mapOf(
                     "hostId" to (firebaseRepository.getCurrentUserId() ?: ""),
                     "pincode" to pin,
@@ -154,9 +154,14 @@ class HostFragment : Fragment() {
                     quizId = quizId,
                     quizData = quizData,
                     onSuccess = {
-                        Toast.makeText(requireContext(), "Quiz created with PIN: $pin", Toast.LENGTH_LONG).show()
-                        pinTextView.text = "Quiz PIN: $pin"
+                        // Clear local questions
                         viewModel.clearQuestions()
+
+                        // Navigate to HostLobbyFragment, passing quizId & PIN
+                        val lobbyFragment = HostLobbyFragment.newInstance(quizId, pin)
+                        parentFragmentManager.beginTransaction()
+                            .replace(R.id.container, lobbyFragment)
+                            .commit()
                     },
                     onFailure = { e ->
                         Toast.makeText(requireContext(), "Failed to create quiz: ${e.message}", Toast.LENGTH_SHORT).show()

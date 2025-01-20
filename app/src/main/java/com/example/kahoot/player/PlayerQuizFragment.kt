@@ -5,113 +5,152 @@ import android.os.CountDownTimer
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.fragment.app.Fragment
 import com.example.kahoot.R
+import com.example.kahoot.utils.Constants
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ktx.toObject
+import com.google.firebase.firestore.ktx.toObjects
 
 class PlayerQuizFragment : Fragment() {
+
     private val db = FirebaseFirestore.getInstance()
     private var quizId: String? = null
+
+    // UI
+    private lateinit var waitingLayout: TextView
+    private lateinit var questionLayout: LinearLayout
     private lateinit var questionTextView: TextView
     private lateinit var optionButtons: List<Button>
     private lateinit var countdownText: TextView
 
+    // Current question data
+    private var currentQuestionIndex: Int = 0
+    private var currentQuestion: Map<String, Any>? = null
+    private var timer: CountDownTimer? = null
+    private var quizStatus: String = ""
+
     companion object {
+        private const val ARG_QUIZ_ID = "arg_quiz_id"
+
         fun newInstance(quizId: String): PlayerQuizFragment {
-            val f = PlayerQuizFragment()
-            f.arguments = Bundle().apply { putString("quizId", quizId) }
-            return f
+            val fragment = PlayerQuizFragment()
+            fragment.arguments = Bundle().apply {
+                putString(ARG_QUIZ_ID, quizId)
+            }
+            return fragment
         }
     }
 
-    private var currentQuestionIndex: Int = 0
-    private var currentQuestion: Map<String, Any?>? = null
-    private var timer: CountDownTimer? = null
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        quizId = arguments?.getString(ARG_QUIZ_ID)
+    }
 
     override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
+        inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         val view = inflater.inflate(R.layout.fragment_player_quiz, container, false)
+
+        waitingLayout = view.findViewById(R.id.waitingTextView)
+        questionLayout = view.findViewById(R.id.questionLayout)
         questionTextView = view.findViewById(R.id.questionTextView)
+        countdownText = view.findViewById(R.id.countdownText)
+
         optionButtons = listOf(
             view.findViewById(R.id.optionButton1),
             view.findViewById(R.id.optionButton2),
             view.findViewById(R.id.optionButton3),
             view.findViewById(R.id.optionButton4)
         )
-        countdownText = view.findViewById(R.id.countdownText)
 
-        quizId = arguments?.getString("quizId")
-
-        listenToQuizChanges()
-
-        optionButtons.forEachIndexed { i, btn ->
-            btn.setOnClickListener {
-                submitAnswer(i)
+        optionButtons.forEachIndexed { index, button ->
+            button.setOnClickListener {
+                submitAnswer(index)
             }
         }
 
+        listenToQuizChanges()
         return view
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        timer?.cancel()
     }
 
     private fun listenToQuizChanges() {
         val qId = quizId ?: return
         val quizRef = db.collection("quizzes").document(qId)
+
         quizRef.addSnapshotListener { snapshot, e ->
-            if (e != null) return@addSnapshotListener
-            if (snapshot == null || !snapshot.exists()) return@addSnapshotListener
+            if (e != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
 
-            val status = snapshot.getString("status")
-            if (status == "ended") {
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.container, ScoreboardFragment.newInstance(qId))
-                    .commit()
-                return@addSnapshotListener
-            }
+            quizStatus = snapshot.getString("status") ?: ""
+            currentQuestionIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
 
-            val cqi = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
-            val questions = snapshot.get("questions") as? List<Map<String, Any?>>
-            if (questions == null || questions.size <= cqi) return@addSnapshotListener
-
-            currentQuestionIndex = cqi
-            currentQuestion = questions[cqi]
-
-            val qText = currentQuestion?.get("questionText") as? String ?: ""
-            val options = currentQuestion?.get("options") as? List<String> ?: listOf("", "", "", "")
-            val timeLimit = currentQuestion?.get("timeLimitSeconds") as? Long ?: 10
-            val startTime = currentQuestion?.get("startTime")
-
-            questionTextView.text = qText
-            optionButtons.forEachIndexed { i, btn ->
-                btn.text = options.getOrNull(i) ?: ""
-            }
-
-            if (startTime is com.google.firebase.Timestamp) {
-                val questionStart = startTime.toDate().time
-                val now = System.currentTimeMillis()
-                val timeElapsed = (now - questionStart) / 1000
-                val timeRemaining = timeLimit - timeElapsed
-                startTimer(timeRemaining.toInt())
-            } else {
-                countdownText.text = "Waiting..."
+            when (quizStatus) {
+                Constants.STATUS_OPEN_FOR_JOIN -> {
+                    // Show waiting screen, hide question UI
+                    waitingLayout.visibility = View.VISIBLE
+                    questionLayout.visibility = View.GONE
+                    countdownText.text = "Waiting..."
+                }
+                Constants.STATUS_STARTED -> {
+                    // Show question UI
+                    waitingLayout.visibility = View.GONE
+                    questionLayout.visibility = View.VISIBLE
+                    loadCurrentQuestion(snapshot)
+                }
+                Constants.STATUS_ENDED -> {
+                    // Navigate to scoreboard or show a message
+                    parentFragmentManager.beginTransaction()
+                        .replace(R.id.container, ScoreboardFragment.newInstance(qId))
+                        .commit()
+                }
+                else -> {
+                    // Some unknown status
+                    waitingLayout.text = "Unknown quiz status: $quizStatus"
+                    waitingLayout.visibility = View.VISIBLE
+                    questionLayout.visibility = View.GONE
+                }
             }
         }
     }
 
-    private fun startTimer(seconds: Int) {
-        timer?.cancel()
-        if (seconds <= 0) {
-            countdownText.text = "Time's up!"
+    private fun loadCurrentQuestion(snapshot: com.google.firebase.firestore.DocumentSnapshot) {
+        val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
+        if (currentQuestionIndex >= questions.size) {
+            // No more questions; possibly the quiz is done
+            countdownText.text = "No more questions"
             return
         }
-        timer = object : CountDownTimer(seconds * 1000L, 1000) {
+
+        currentQuestion = questions[currentQuestionIndex]
+        val questionText = currentQuestion?.get("questionText") as? String ?: "No question"
+        val options = currentQuestion?.get("options") as? List<String> ?: listOf("", "", "", "")
+        val timeLimit = currentQuestion?.get("timeLimitSeconds") as? Long ?: 30
+
+        // Update UI
+        questionTextView.text = questionText
+        optionButtons.forEachIndexed { i, btn ->
+            btn.visibility = if (i < options.size) View.VISIBLE else View.GONE
+            if (i < options.size) {
+                btn.text = options[i]
+            }
+        }
+
+        // Start the countdown
+        startTimer(timeLimit)
+    }
+
+    private fun startTimer(timeLimitSeconds: Long) {
+        timer?.cancel()
+        timer = object : CountDownTimer(timeLimitSeconds * 1000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 countdownText.text = "Time left: ${millisUntilFinished / 1000}s"
             }
@@ -126,12 +165,9 @@ class PlayerQuizFragment : Fragment() {
         timer?.cancel()
 
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        if (quizId == null) {
-            Toast.makeText(requireContext(), "Failed to submit answer", Toast.LENGTH_SHORT).show()
-            return
-        }
+        val qId = quizId ?: return
 
-        db.collection("quizzes").document(quizId!!)
+        db.collection("quizzes").document(qId)
             .collection("responses")
             .document(currentQuestionIndex.toString())
             .collection("answers")
@@ -145,14 +181,8 @@ class PlayerQuizFragment : Fragment() {
             .addOnSuccessListener {
                 Toast.makeText(requireContext(), "Answer submitted", Toast.LENGTH_SHORT).show()
             }
-            .addOnFailureListener { e ->
-                Toast.makeText(requireContext(), "Failed to submit answer: ${e.message}", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener { ex ->
+                Toast.makeText(requireContext(), "Failed to submit answer: ${ex.message}", Toast.LENGTH_SHORT).show()
             }
-    }
-
-    private fun displayQuizCompleted() {
-        questionTextView.text = "Quiz completed!"
-        optionButtons.forEach { it.visibility = View.GONE }
-        countdownText.visibility = View.GONE
     }
 }

@@ -34,9 +34,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".player.PlayerFragment"
-            android:exported="false" />
-        <activity
             android:name=".host.HostFragment"
             android:exported="false" />
         <activity

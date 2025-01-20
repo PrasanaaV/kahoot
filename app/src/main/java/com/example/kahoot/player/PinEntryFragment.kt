@@ -33,7 +33,6 @@ class PinEntryFragment : Fragment() {
                 Toast.makeText(requireContext(), "Enter PIN", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-
             validatePinAndJoinQuiz(pin)
         }
 
@@ -41,7 +40,10 @@ class PinEntryFragment : Fragment() {
     }
 
     private fun validatePinAndJoinQuiz(pin: String) {
-        db.collection("quizzes").whereEqualTo("pincode", pin).limit(1).get()
+        db.collection("quizzes")
+            .whereEqualTo("pincode", pin)
+            .limit(1)
+            .get()
             .addOnSuccessListener { querySnapshot ->
                 if (querySnapshot.isEmpty) {
                     Toast.makeText(requireContext(), "Invalid PIN", Toast.LENGTH_SHORT).show()
@@ -50,12 +52,15 @@ class PinEntryFragment : Fragment() {
 
                 val quizDoc = querySnapshot.documents[0]
                 val quizId = quizDoc.id
-                val status = quizDoc.getString("status")
+                val status = quizDoc.getString("status") ?: ""
 
                 if (status == "open_for_join" || status == "started") {
                     joinQuiz(quizId)
                 } else {
-                    Toast.makeText(requireContext(), "Quiz not open for joining (Status: $status)", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(),
+                        "Quiz not open for joining (Status: $status)",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
             .addOnFailureListener { e ->
@@ -72,21 +77,17 @@ class PinEntryFragment : Fragment() {
             FieldValue.arrayUnion(mapOf("uid" to userId, "score" to 0))
         ).addOnSuccessListener {
             Toast.makeText(requireContext(), "Joined quiz successfully", Toast.LENGTH_SHORT).show()
-            navigateToNextScreen(quizId)
+            navigateToPlayerQuiz(quizId)
         }.addOnFailureListener { e ->
             Toast.makeText(requireContext(), "Failed to join quiz: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun navigateToNextScreen(quizId: String) {
-        val fragmentManager = parentFragmentManager
-        val transaction = fragmentManager.beginTransaction()
-        val playerFragment = PlayerFragment.newInstance(quizId)
-
-        transaction.replace(R.id.container, playerFragment)
-        transaction.addToBackStack(null) // Optional, for back navigation
+    private fun navigateToPlayerQuiz(quizId: String) {
+        val transaction = parentFragmentManager.beginTransaction()
+        val playerQuizFragment = PlayerQuizFragment.newInstance(quizId)
+        transaction.replace(R.id.container, playerQuizFragment)
+        transaction.addToBackStack(null)
         transaction.commit()
-
-        Toast.makeText(requireContext(), "Navigating to quiz for quizId: $quizId", Toast.LENGTH_SHORT).show()
     }
 }
