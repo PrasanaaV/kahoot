@@ -142,8 +142,10 @@ class PlayerQuizFragment : Fragment() {
             val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
             
             if (currentQuestionIndex >= questions.size) {
-                // Update quiz status to ended if we're at the last question
-                quizRef.update("status", Constants.STATUS_ENDED)
+                // Si nous sommes après la dernière question, terminer le quiz
+                if (quizStatus != Constants.STATUS_ENDED) {
+                    quizRef.update("status", Constants.STATUS_ENDED)
+                }
                 return@addSnapshotListener
             }
 
@@ -283,9 +285,13 @@ class PlayerQuizFragment : Fragment() {
             val currentIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
             val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
             
-            if (currentIndex < questions.size - 1) {
-                quizRef.update("currentQuestionIndex", currentIndex + 1)
+            // Passer à la question suivante
+            val nextIndex = currentIndex + 1
+            if (nextIndex < questions.size) {
+                // S'il y a encore des questions, passer à la suivante
+                quizRef.update("currentQuestionIndex", nextIndex)
             } else {
+                // Si c'était la dernière question, terminer le quiz
                 quizRef.update("status", Constants.STATUS_ENDED)
             }
         }

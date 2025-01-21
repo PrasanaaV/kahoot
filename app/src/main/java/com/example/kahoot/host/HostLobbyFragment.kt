@@ -9,31 +9,31 @@ import androidx.fragment.app.Fragment
 import com.example.kahoot.R
 import com.example.kahoot.utils.Constants
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 
 class HostLobbyFragment : Fragment() {
 
+    private val firestore = FirebaseFirestore.getInstance()
+    private var quizId: String? = null
+    private var pincode: String? = null
+    private var participantsNames = mutableListOf<String>()
+    private lateinit var adapter: ArrayAdapter<String>
     private lateinit var pinTextView: TextView
     private lateinit var participantsListView: ListView
     private lateinit var launchQuizButton: Button
-
-    private var quizId: String? = null
-    private var quizPin: String? = null
-
-    private val firestore = FirebaseFirestore.getInstance()
-    private lateinit var adapter: ArrayAdapter<String>
-    private val participantsNames = mutableListOf<String>()
+    private lateinit var openQuizButton: Button
+    private var snapshotListener: ListenerRegistration? = null
 
     companion object {
-        private const val ARG_QUIZ_ID = "arg_quiz_id"
-        private const val ARG_PIN = "arg_pin"
+        private const val ARG_QUIZ_ID = "quiz_id"
+        private const val ARG_PIN = "pin"
 
         fun newInstance(quizId: String, pin: String): HostLobbyFragment {
             val fragment = HostLobbyFragment()
-            val args = Bundle().apply {
+            fragment.arguments = Bundle().apply {
                 putString(ARG_QUIZ_ID, quizId)
                 putString(ARG_PIN, pin)
             }
-            fragment.arguments = args
             return fragment
         }
     }
@@ -41,63 +41,126 @@ class HostLobbyFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         quizId = arguments?.getString(ARG_QUIZ_ID)
-        quizPin = arguments?.getString(ARG_PIN)
+        pincode = arguments?.getString(ARG_PIN)
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
+        inflater: LayoutInflater,
+        container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View {
+    ): View? {
         val view = inflater.inflate(R.layout.fragment_host_lobby, container, false)
 
         pinTextView = view.findViewById(R.id.pinTextView)
         participantsListView = view.findViewById(R.id.participantsListView)
         launchQuizButton = view.findViewById(R.id.launchQuizButton)
-
-        pinTextView.text = "Quiz PIN: $quizPin"
+        openQuizButton = view.findViewById(R.id.openQuizButton)
 
         adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, participantsNames)
         participantsListView.adapter = adapter
 
-        launchQuizButton.setOnClickListener {
-            launchQuiz()
-        }
+        pinTextView.text = "Quiz PIN: $pincode"
 
-        listenForParticipants()
+        launchQuizButton.setOnClickListener { launchQuiz() }
+        openQuizButton.setOnClickListener { openQuiz() }
 
+        setupQuizListener()
         return view
     }
 
-    private fun listenForParticipants() {
+    override fun onDestroyView() {
+        super.onDestroyView()
+        snapshotListener?.remove()
+    }
+
+    private fun setupQuizListener() {
         val qId = quizId ?: return
         val quizRef = firestore.collection("quizzes").document(qId)
 
-        // Listen to any changes in the quiz doc, including "participants"
-        quizRef.addSnapshotListener { snapshot, error ->
-            if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+        snapshotListener = quizRef.addSnapshotListener { snapshot, e ->
+            if (e != null || snapshot == null || !snapshot.exists() || !isAdded) return@addSnapshotListener
 
+            val status = snapshot.getString("status") ?: ""
             val participants = snapshot.get("participants") as? List<Map<String, Any>> ?: emptyList()
+
+            // Mettre à jour la liste des participants
             participantsNames.clear()
-
-            // Display username if available, otherwise uid
-            for (participant in participants) {
-                val username = participant["username"] as? String
-                val uid = participant["uid"] as? String ?: "Unknown"
-                val displayName = if (!username.isNullOrEmpty()) username else uid
-
-                participantsNames.add(displayName)
+            participants.forEach { participant ->
+                val uid = participant["uid"] as? String ?: ""
+                val username = participant["username"] as? String ?: uid
+                participantsNames.add(username)
             }
             adapter.notifyDataSetChanged()
+
+            // Gérer la visibilité des boutons selon le statut
+            when (status) {
+                Constants.STATUS_CREATED -> {
+                    openQuizButton.visibility = View.VISIBLE
+                    launchQuizButton.visibility = View.GONE
+                }
+                Constants.STATUS_ENDED -> {
+                    openQuizButton.visibility = View.VISIBLE
+                    launchQuizButton.visibility = View.GONE
+                }
+                Constants.STATUS_OPEN_FOR_JOIN -> {
+                    openQuizButton.visibility = View.GONE
+                    launchQuizButton.visibility = View.VISIBLE
+                }
+                else -> {
+                    openQuizButton.visibility = View.GONE
+                    launchQuizButton.visibility = View.GONE
+                }
+            }
         }
+    }
+
+    private fun openQuiz() {
+        val qId = quizId ?: return
+        val quizRef = firestore.collection("quizzes").document(qId)
+
+        // Réinitialiser le quiz pour une nouvelle session
+        val updates = mapOf(
+            "status" to Constants.STATUS_OPEN_FOR_JOIN,
+            "currentQuestionIndex" to 0,
+            "participants" to emptyList<Map<String, Any>>()
+        )
+
+        quizRef.update(updates)
+            .addOnSuccessListener {
+                // Supprimer toutes les anciennes réponses
+                quizRef.collection("responses").get().addOnSuccessListener { responses ->
+                    val batch = firestore.batch()
+                    responses.forEach { response ->
+                        batch.delete(response.reference)
+                    }
+                    batch.commit()
+                }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Failed to open quiz: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun launchQuiz() {
         val qId = quizId ?: return
         val quizRef = firestore.collection("quizzes").document(qId)
 
-        quizRef.update("status", Constants.STATUS_STARTED)
+        if (participantsNames.isEmpty()) {
+            Toast.makeText(requireContext(), "At least one player must join to start the quiz.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val updates = mapOf(
+            "status" to Constants.STATUS_IN_PROGRESS,
+            "currentQuestionIndex" to 0
+        )
+        
+        quizRef.update(updates)
             .addOnSuccessListener {
-                Toast.makeText(requireContext(), "Quiz launched!", Toast.LENGTH_SHORT).show()
+                // Navigate to HostQuizFragment
+                parentFragmentManager.beginTransaction()
+                    .replace(R.id.container, HostQuizFragment.newInstance(qId))
+                    .commit()
             }
             .addOnFailureListener { e ->
                 Toast.makeText(requireContext(), "Failed to launch quiz: ${e.message}", Toast.LENGTH_SHORT).show()
