@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="gcm_defaultSenderId" translatable="false">881450519699</string>
-    <string name="google_api_key" translatable="false">AIzaSyAcp3UZCzFOXmpyo3hzea8cMNXAk9PxdnE</string>
-    <string name="google_app_id" translatable="false">1:881450519699:android:fdd5046e0fa96c84631166</string>
-    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyAcp3UZCzFOXmpyo3hzea8cMNXAk9PxdnE</string>
-    <string name="google_storage_bucket" translatable="false">kahoot-8a72d.firebasestorage.app</string>
-    <string name="project_id" translatable="false">kahoot-8a72d</string>
-</resources>

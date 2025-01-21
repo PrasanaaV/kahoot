@@ -102,13 +102,18 @@ class HostQuizFragment : Fragment() {
             val questionText = currentQuestion["questionText"] as? String ?: "No question"
             val timeLimit = (currentQuestion["timeLimitSeconds"] as? Number)?.toInt() ?: 30
 
-            // Get responses for current question
+            // Listen to responses in real-time
             quizRef.collection("responses")
                 .whereEqualTo("questionIndex", currentQuestionIndex)
-                .get()
-                .addOnSuccessListener { responses ->
-                    if (!isAdded) return@addOnSuccessListener
-                    val responseCount = responses.size()
+                .addSnapshotListener { responseSnapshot, responseError ->
+                    if (responseError != null) {
+                        Log.e("Quiz", "Error listening to responses", responseError)
+                        return@addSnapshotListener
+                    }
+
+                    if (!isAdded) return@addSnapshotListener
+
+                    val responseCount = responseSnapshot?.size() ?: 0
                     participantsProgressText.text = "Responses: $responseCount/${participants.size}"
                     
                     // If all participants have answered, cancel timer and move to next question

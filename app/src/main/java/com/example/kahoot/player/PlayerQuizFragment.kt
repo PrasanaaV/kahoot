@@ -1,13 +1,18 @@
 package com.example.kahoot.player
 
-import android.net.wifi.WifiManager.LocalOnlyHotspotCallback
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.kahoot.R
 import com.example.kahoot.utils.Constants
@@ -135,7 +140,6 @@ class PlayerQuizFragment : Fragment() {
             questionLayout.visibility = View.VISIBLE
 
             val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
-            Log.d("Quiz", "Questions: $questions")
             
             if (currentQuestionIndex >= questions.size) {
                 // Update quiz status to ended if we're at the last question
@@ -152,12 +156,13 @@ class PlayerQuizFragment : Fragment() {
 
             questionTextView.text = questionText
             
-            // Update option buttons
+            // Reset button colors and update options for new question
+            resetButtonColors()
+            
             optionButtons.forEachIndexed { index, button ->
                 if (index < options.size) {
                     button.visibility = View.VISIBLE
                     button.text = options[index]
-                    button.isEnabled = true // Re-enable buttons for new question
                 } else {
                     button.visibility = View.GONE
                 }
@@ -204,6 +209,8 @@ class PlayerQuizFragment : Fragment() {
         quizRef.collection("responses").add(response)
             .addOnSuccessListener {
                 Log.d("Quiz", "Response submitted successfully")
+                // After submitting answer, show correct/incorrect colors
+                showAnswerColors(quizRef, selectedOptionIndex)
                 checkAllParticipantsAnswered(quizRef)
             }
             .addOnFailureListener { e ->
@@ -212,6 +219,43 @@ class PlayerQuizFragment : Fragment() {
                     Toast.makeText(requireContext(), "Failed to submit answer", Toast.LENGTH_SHORT).show()
                 }
             }
+    }
+
+    private fun showAnswerColors(quizRef: DocumentReference, selectedOptionIndex: Int) {
+        quizRef.get().addOnSuccessListener { snapshot ->
+            if (!isAdded) return@addOnSuccessListener
+
+            val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
+            if (currentQuestionIndex >= questions.size) return@addOnSuccessListener
+
+            val currentQuestion = questions[currentQuestionIndex] as? Map<String, Any>
+            val correctOptionIndex = currentQuestion?.get("correctOptionIndex") as? Long ?: return@addOnSuccessListener
+
+            // Color all buttons based on correctness
+            optionButtons.forEachIndexed { index, button ->
+                val backgroundColor = when (index) {
+                    correctOptionIndex.toInt() -> ContextCompat.getColor(requireContext(), R.color.correct_answer)
+                    selectedOptionIndex -> if (selectedOptionIndex != correctOptionIndex.toInt()) {
+                        ContextCompat.getColor(requireContext(), R.color.incorrect_answer)
+                    } else {
+                        ContextCompat.getColor(requireContext(), R.color.correct_answer)
+                    }
+                    else -> button.backgroundTintList?.defaultColor ?: Color.GRAY
+                }
+                
+                button.backgroundTintList = ColorStateList.valueOf(backgroundColor)
+                // Keep text white and visible even when button is disabled
+                button.setTextColor(Color.WHITE)
+            }
+        }
+    }
+
+    private fun resetButtonColors() {
+        optionButtons.forEach { button ->
+            button.backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.purple_500))
+            button.setTextColor(Color.WHITE)
+            button.isEnabled = true
+        }
     }
 
     private fun checkAllParticipantsAnswered(quizRef: DocumentReference) {
