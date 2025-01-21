@@ -1,7 +1,9 @@
 package com.example.kahoot.player
 
+import android.net.wifi.WifiManager.LocalOnlyHotspotCallback
 import android.os.Bundle
 import android.os.CountDownTimer
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +12,7 @@ import androidx.fragment.app.Fragment
 import com.example.kahoot.R
 import com.example.kahoot.utils.Constants
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ktx.toObject
@@ -29,7 +32,6 @@ class PlayerQuizFragment : Fragment() {
 
     // Current question data
     private var currentQuestionIndex: Int = 0
-    private var currentQuestion: Map<String, Any>? = null
     private var timer: CountDownTimer? = null
     private var quizStatus: String = ""
 
@@ -87,102 +89,161 @@ class PlayerQuizFragment : Fragment() {
         val qId = quizId ?: return
         val quizRef = db.collection("quizzes").document(qId)
 
+        Log.d("Quiz", "Setting up snapshot listener for quizId: $qId")
         quizRef.addSnapshotListener { snapshot, e ->
-            if (e != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+            if (e != null) {
+                Log.e("Quiz", "Listen failed.", e)
+                return@addSnapshotListener
+            }
 
+            if (snapshot == null || !snapshot.exists()) {
+                Log.d("Quiz", "Current data: null")
+                return@addSnapshotListener
+            }
+
+            if (!isAdded) return@addSnapshotListener
+
+            Log.d("Quiz", "Current data: ${snapshot.data}")
+            
             quizStatus = snapshot.getString("status") ?: ""
             currentQuestionIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
 
-            when (quizStatus) {
-                Constants.STATUS_OPEN_FOR_JOIN -> {
-                    // Show waiting screen, hide question UI
-                    waitingLayout.visibility = View.VISIBLE
-                    questionLayout.visibility = View.GONE
-                    countdownText.text = "Waiting..."
-                }
-                Constants.STATUS_STARTED -> {
-                    // Show question UI
-                    waitingLayout.visibility = View.GONE
-                    questionLayout.visibility = View.VISIBLE
-                    loadCurrentQuestion(snapshot)
-                }
-                Constants.STATUS_ENDED -> {
-                    // Navigate to scoreboard or show a message
-                    parentFragmentManager.beginTransaction()
-                        .replace(R.id.container, ScoreboardFragment.newInstance(qId))
-                        .commit()
-                }
-                else -> {
-                    // Some unknown status
-                    waitingLayout.text = "Unknown quiz status: $quizStatus"
-                    waitingLayout.visibility = View.VISIBLE
-                    questionLayout.visibility = View.GONE
+            Log.d("Quiz", "Status: $quizStatus, Current Question Index: $currentQuestionIndex")
+
+            if (quizStatus == Constants.STATUS_ENDED) {
+                // Navigate to scoreboard when quiz ends
+                parentFragmentManager.beginTransaction()
+                    .replace(R.id.container, ScoreboardFragment.newInstance(qId))
+                    .commit()
+                return@addSnapshotListener
+            }
+
+            if (quizStatus == Constants.STATUS_OPEN_FOR_JOIN) {
+                waitingLayout.visibility = View.VISIBLE
+                questionLayout.visibility = View.GONE
+                waitingLayout.text = "Waiting for quiz to start..."
+                return@addSnapshotListener
+            }
+
+            if (quizStatus != Constants.STATUS_IN_PROGRESS) {
+                if (!isAdded) return@addSnapshotListener
+                Toast.makeText(requireContext(), "Quiz not in progress.", Toast.LENGTH_SHORT).show()
+                return@addSnapshotListener
+            }
+
+            waitingLayout.visibility = View.GONE
+            questionLayout.visibility = View.VISIBLE
+
+            val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
+            Log.d("Quiz", "Questions: $questions")
+            
+            if (currentQuestionIndex >= questions.size) {
+                // Update quiz status to ended if we're at the last question
+                quizRef.update("status", Constants.STATUS_ENDED)
+                return@addSnapshotListener
+            }
+
+            val currentQuestion = questions[currentQuestionIndex]
+            val questionText = currentQuestion["questionText"] as? String ?: "No question"
+            val options = currentQuestion["options"] as? List<String> ?: listOf()
+            val timeLimit = (currentQuestion["timeLimitSeconds"] as? Number)?.toInt() ?: 30
+
+            Log.d("Quiz", "Current Question: $questionText, Time Limit: $timeLimit seconds")
+
+            questionTextView.text = questionText
+            
+            // Update option buttons
+            optionButtons.forEachIndexed { index, button ->
+                if (index < options.size) {
+                    button.visibility = View.VISIBLE
+                    button.text = options[index]
+                    button.isEnabled = true // Re-enable buttons for new question
+                } else {
+                    button.visibility = View.GONE
                 }
             }
+            
+            startTimer(timeLimit.toLong())
         }
-    }
-
-    private fun loadCurrentQuestion(snapshot: com.google.firebase.firestore.DocumentSnapshot) {
-        val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
-        if (currentQuestionIndex >= questions.size) {
-            // No more questions; possibly the quiz is done
-            countdownText.text = "No more questions"
-            return
-        }
-
-        currentQuestion = questions[currentQuestionIndex]
-        val questionText = currentQuestion?.get("questionText") as? String ?: "No question"
-        val options = currentQuestion?.get("options") as? List<String> ?: listOf("", "", "", "")
-        val timeLimit = currentQuestion?.get("timeLimitSeconds") as? Long ?: 30
-
-        // Update UI
-        questionTextView.text = questionText
-        optionButtons.forEachIndexed { i, btn ->
-            btn.visibility = if (i < options.size) View.VISIBLE else View.GONE
-            if (i < options.size) {
-                btn.text = options[i]
-            }
-        }
-
-        // Start the countdown
-        startTimer(timeLimit)
     }
 
     private fun startTimer(timeLimitSeconds: Long) {
         timer?.cancel()
         timer = object : CountDownTimer(timeLimitSeconds * 1000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
+                if (!isAdded) return
                 countdownText.text = "Time left: ${millisUntilFinished / 1000}s"
             }
 
             override fun onFinish() {
-                countdownText.text = "Time's up!"
+                if (!isAdded) return
+                // If time is up and player hasn't answered, submit a no-answer (-1)
+                if (optionButtons.any { it.isEnabled }) {
+                    submitAnswer(-1)
+                }
             }
         }.start()
     }
 
-    private fun submitAnswer(optionIndex: Int) {
-        timer?.cancel()
-
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    private fun submitAnswer(selectedOptionIndex: Int) {
         val qId = quizId ?: return
+        if (!isAdded) return
+        
+        val quizRef = db.collection("quizzes").document(qId)
+        
+        // Disable all option buttons after answering
+        optionButtons.forEach { it.isEnabled = false }
+        
+        val response = hashMapOf(
+            "participantId" to FirebaseAuth.getInstance().currentUser?.uid,
+            "questionIndex" to currentQuestionIndex,
+            "selectedOption" to selectedOptionIndex,
+            "timestamp" to FieldValue.serverTimestamp()
+        )
 
-        db.collection("quizzes").document(qId)
-            .collection("responses")
-            .document(currentQuestionIndex.toString())
-            .collection("answers")
-            .document(userId)
-            .set(
-                mapOf(
-                    "optionChosen" to optionIndex,
-                    "timestamp" to FieldValue.serverTimestamp()
-                )
-            )
+        quizRef.collection("responses").add(response)
             .addOnSuccessListener {
-                Toast.makeText(requireContext(), "Answer submitted", Toast.LENGTH_SHORT).show()
+                Log.d("Quiz", "Response submitted successfully")
+                checkAllParticipantsAnswered(quizRef)
             }
-            .addOnFailureListener { ex ->
-                Toast.makeText(requireContext(), "Failed to submit answer: ${ex.message}", Toast.LENGTH_SHORT).show()
+            .addOnFailureListener { e ->
+                Log.e("Quiz", "Error submitting response", e)
+                if (isAdded) {
+                    Toast.makeText(requireContext(), "Failed to submit answer", Toast.LENGTH_SHORT).show()
+                }
             }
+    }
+
+    private fun checkAllParticipantsAnswered(quizRef: DocumentReference) {
+        quizRef.get().addOnSuccessListener { snapshot ->
+            if (!isAdded) return@addOnSuccessListener
+
+            val participants = snapshot.get("participants") as? List<Map<String, Any>> ?: emptyList()
+            
+            quizRef.collection("responses")
+                .whereEqualTo("questionIndex", currentQuestionIndex)
+                .get()
+                .addOnSuccessListener { responses ->
+                    if (responses.size() >= participants.size) {
+                        // All participants have answered, move to next question
+                        moveToNextQuestion(quizRef)
+                    }
+                }
+        }
+    }
+
+    private fun moveToNextQuestion(quizRef: DocumentReference) {
+        quizRef.get().addOnSuccessListener { snapshot ->
+            if (!isAdded) return@addOnSuccessListener
+            
+            val currentIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
+            val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
+            
+            if (currentIndex < questions.size - 1) {
+                quizRef.update("currentQuestionIndex", currentIndex + 1)
+            } else {
+                quizRef.update("status", Constants.STATUS_ENDED)
+            }
+        }
     }
 }

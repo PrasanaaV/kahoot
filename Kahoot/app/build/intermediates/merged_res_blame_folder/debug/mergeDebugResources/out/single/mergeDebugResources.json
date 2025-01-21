@@ -1,0 +1,98 @@
+[
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-anydpi_ic_launcher_round.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-anydpi/ic_launcher_round.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-mdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-mdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-hdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-hdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-xxhdpi_ic_launcher.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-xxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/xml_data_extraction_rules.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/xml/data_extraction_rules.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-xxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-xxhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/layout_fragment_scoreboard.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/layout/fragment_scoreboard.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/layout_fragment_host.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/layout/fragment_host.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/layout_fragment_player.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/layout/fragment_player.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-xhdpi_ic_launcher.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-xhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/xml_backup_rules.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/xml/backup_rules.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-hdpi_ic_launcher.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-hdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/layout_fragment_role_selection.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/layout/fragment_role_selection.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/drawable_ic_launcher_background.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/drawable/ic_launcher_background.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/layout_fragment_host_sets_questions.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/layout/fragment_host_sets_questions.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/layout_activity_main.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/layout/activity_main.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-anydpi_ic_launcher.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-anydpi/ic_launcher.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/layout_fragment_player_quiz.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/layout/fragment_player_quiz.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/layout_fragment_pin_entry.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/layout/fragment_pin_entry.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/drawable_ic_launcher_foreground.xml.flat",
+        "source": "com.example.kahoot.app-main-51:/drawable/ic_launcher_foreground.xml"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-xhdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-xhdpi/ic_launcher_round.webp"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-mdpi_ic_launcher.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-mdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-xxxhdpi_ic_launcher.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-xxxhdpi/ic_launcher.webp"
+    },
+    {
+        "merged": "com.example.kahoot.app-debug-49:/mipmap-xxxhdpi_ic_launcher_round.webp.flat",
+        "source": "com.example.kahoot.app-main-51:/mipmap-xxxhdpi/ic_launcher_round.webp"
+    }
+]

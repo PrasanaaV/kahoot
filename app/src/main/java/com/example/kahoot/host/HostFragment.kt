@@ -28,6 +28,18 @@ class HostFragment : Fragment() {
 
     private lateinit var questionsAdapter: ArrayAdapter<String>
 
+    companion object {
+        private const val ARG_QUIZ_ID = "quiz_id"
+
+        fun newInstance(quizId: String): HostFragment {
+            val fragment = HostFragment()
+            fragment.arguments = Bundle().apply {
+                putString(ARG_QUIZ_ID, quizId)
+            }
+            return fragment
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
