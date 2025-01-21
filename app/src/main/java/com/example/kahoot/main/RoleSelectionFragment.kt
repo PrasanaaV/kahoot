@@ -6,11 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import androidx.fragment.app.Fragment
+import com.example.kahoot.R
 import com.example.kahoot.host.HostFragment
 import com.example.kahoot.player.PinEntryFragment
-import com.example.kahoot.R
+import com.google.firebase.auth.FirebaseAuth
 
 class RoleSelectionFragment : Fragment() {
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -20,10 +22,20 @@ class RoleSelectionFragment : Fragment() {
         val playerButton = view.findViewById<Button>(R.id.playerButton)
 
         hostButton.setOnClickListener {
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.container, HostFragment())
-                .addToBackStack(null)
-                .commit()
+            val user = FirebaseAuth.getInstance().currentUser
+            if (user == null) {
+                // Not logged in -> go to HostLoginFragment
+                parentFragmentManager.beginTransaction()
+                    .replace(R.id.container, HostLoginFragment())
+                    .addToBackStack(null)
+                    .commit()
+            } else {
+                // Already logged in -> go directly to HostFragment
+                parentFragmentManager.beginTransaction()
+                    .replace(R.id.container, HostFragment())
+                    .addToBackStack(null)
+                    .commit()
+            }
         }
 
         playerButton.setOnClickListener {

@@ -15,26 +15,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        signInAnonymously()
-    }
-
-    private fun signInAnonymously() {
-        auth.signInAnonymously().addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                // User is signed in, we can proceed
-                // Here, navigate to either a Host UI or Player UI
-                showMainMenu()
-            } else {
-                // Handle error
-                Toast.makeText(this, "Auth failed", Toast.LENGTH_SHORT).show()
-            }
-        }
+        // We no longer sign in anonymously here.
+        // Instead, let the host log in or register from the new HostLoginFragment.
+        showMainMenu()
     }
 
     private fun showMainMenu() {
         // For MVP, we can just choose roles: Host or Player
-        // You can navigate to different fragments or activities
         supportFragmentManager.beginTransaction()
             .replace(R.id.container, RoleSelectionFragment())
             .commit()

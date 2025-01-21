@@ -1,72 +1,91 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
-    <EditText
-        android:id="@+id/questionInput"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:hint="Enter your question" />
+        android:padding="16dp"
+        android:orientation="vertical">
 
-    <EditText
-        android:id="@+id/timeLimitInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Time Limit (seconds)"
-        android:inputType="number" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enter your question"
+            android:textSize="16sp"/>
 
-    <EditText
-        android:id="@+id/optionAInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Option A" />
+        <EditText
+            android:id="@+id/questionInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Enter your question" />
 
-    <EditText
-        android:id="@+id/optionBInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Option B" />
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Time Limit (seconds)"
+            android:textSize="16sp"/>
 
-    <EditText
-        android:id="@+id/optionCInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Option C" />
+        <EditText
+            android:id="@+id/timeLimitInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Time Limit (seconds)" />
 
-    <EditText
-        android:id="@+id/optionDInput"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Option D" />
+        <EditText
+            android:id="@+id/optionAInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Option A"
+            android:layout_marginTop="16dp" />
 
-    <Spinner
-        android:id="@+id/correctOptionSpinner"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <EditText
+            android:id="@+id/optionBInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Option B" />
 
-    <Button
-        android:id="@+id/addQuestionButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Add Question" />
+        <EditText
+            android:id="@+id/optionCInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Option C" />
 
-    <Button
-        android:id="@+id/setQuizButton"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Set Quiz" />
+        <EditText
+            android:id="@+id/optionDInput"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Option D" />
 
-    <ListView
-        android:id="@+id/questionsListView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        <Spinner
+            android:id="@+id/correctOptionSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" />
 
-    <TextView
-        android:id="@+id/pinTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Quiz PIN: " />
+        <!-- Buttons -->
+        <Button
+            android:id="@+id/addQuestionButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Add Question"
+            android:layout_marginTop="16dp" />
 
-</LinearLayout>
+        <Button
+            android:id="@+id/setQuizButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Set Quiz"
+            android:layout_marginTop="8dp" />
+
+        <!-- ListView for questions -->
+        <ListView
+            android:id="@+id/questionsListView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+</ScrollView>

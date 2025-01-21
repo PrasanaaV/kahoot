@@ -28,18 +28,6 @@ class HostFragment : Fragment() {
 
     private lateinit var questionsAdapter: ArrayAdapter<String>
 
-    companion object {
-        private const val ARG_QUIZ_ID = "quiz_id"
-
-        fun newInstance(quizId: String): HostFragment {
-            val fragment = HostFragment()
-            fragment.arguments = Bundle().apply {
-                putString(ARG_QUIZ_ID, quizId)
-            }
-            return fragment
-        }
-    }
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -54,8 +42,7 @@ class HostFragment : Fragment() {
         addQuestionButton.setOnClickListener { handleAddQuestion() }
         setQuizButton.setOnClickListener { handleCreateQuiz() }
 
-        // Sign in anonymously (if not already signed in)
-        signInAnonymously()
+        // Removed signInAnonymously() call; host must be signed in from HostLoginFragment
 
         return view
     }
@@ -103,17 +90,6 @@ class HostFragment : Fragment() {
         }
     }
 
-    private fun signInAnonymously() {
-        firebaseRepository.signInAnonymously(
-            onSuccess = {
-                // Already signed in or newly signed in
-            },
-            onFailure = { e ->
-                Toast.makeText(requireContext(), "Sign in failed: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        )
-    }
-
     private fun handleAddQuestion() {
         val questionText = questionInput.text.toString().trim()
         val options = optionInputs.map { it.text.toString().trim() }.filter { it.isNotEmpty() }
@@ -149,7 +125,6 @@ class HostFragment : Fragment() {
             return
         }
 
-        // Generate a unique PIN, then create the quiz in Firestore
         firebaseRepository.generateUniquePin(
             onSuccess = { pin ->
                 val quizId = firebaseRepository.generateQuizId()
@@ -169,7 +144,7 @@ class HostFragment : Fragment() {
                         // Clear local questions
                         viewModel.clearQuestions()
 
-                        // Navigate to HostLobbyFragment (which will show the PIN)
+                        // Navigate to HostLobbyFragment (which shows the PIN & participants)
                         val lobbyFragment = HostLobbyFragment.newInstance(quizId, pin)
                         parentFragmentManager.beginTransaction()
                             .replace(R.id.container, lobbyFragment)
