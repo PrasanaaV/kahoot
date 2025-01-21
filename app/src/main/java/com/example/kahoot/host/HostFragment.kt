@@ -22,7 +22,13 @@ class HostFragment : Fragment() {
     private lateinit var optionInputs: List<EditText>
     private lateinit var correctOptionSpinner: Spinner
     private lateinit var addQuestionButton: Button
+
+    // NEW
+    private lateinit var saveQuizButton: Button
+
+    // Existing
     private lateinit var setQuizButton: Button
+
     private lateinit var questionsListView: ListView
     private lateinit var timeLimitInput: EditText
 
@@ -40,9 +46,8 @@ class HostFragment : Fragment() {
         setupObservers()
 
         addQuestionButton.setOnClickListener { handleAddQuestion() }
+        saveQuizButton.setOnClickListener { handleSaveQuiz() }
         setQuizButton.setOnClickListener { handleCreateQuiz() }
-
-        // Removed signInAnonymously() call; host must be signed in from HostLoginFragment
 
         return view
     }
@@ -57,7 +62,13 @@ class HostFragment : Fragment() {
         )
         correctOptionSpinner = view.findViewById(R.id.correctOptionSpinner)
         addQuestionButton = view.findViewById(R.id.addQuestionButton)
+
+        // Initialize the new "Save Quiz" button
+        saveQuizButton = view.findViewById(R.id.saveQuizButton)
+
+        // Existing "Set Quiz" button
         setQuizButton = view.findViewById(R.id.setQuizButton)
+
         questionsListView = view.findViewById(R.id.questionsListView)
         timeLimitInput = view.findViewById(R.id.timeLimitInput)
     }
@@ -118,6 +129,53 @@ class HostFragment : Fragment() {
         timeLimitInput.text.clear()
     }
 
+    /**
+     * "Save Quiz" -> Creates a quiz with status = "created"
+     * so that it appears in the host's quiz list but is NOT open for join.
+     */
+    private fun handleSaveQuiz() {
+        val questions = viewModel.questions.value ?: emptyList()
+        // It's up to you if you allow saving with zero questions.
+        // We'll allow it for now, so they can add them later.
+
+        // Generate a PIN but do NOT open for join
+        firebaseRepository.generateUniquePin(
+            onSuccess = { pin ->
+                val quizId = firebaseRepository.generateQuizId()
+                val quizData = mapOf(
+                    "hostId" to (firebaseRepository.getCurrentUserId() ?: ""),
+                    "pincode" to pin,
+                    "questions" to questions.map { it.toMap() },
+                    "participants" to emptyList<Map<String, Any>>(),
+                    "status" to Constants.STATUS_CREATED,  // <--- "created" here
+                    "createdAt" to FieldValue.serverTimestamp()
+                )
+
+                firebaseRepository.createQuiz(
+                    quizId = quizId,
+                    quizData = quizData,
+                    onSuccess = {
+                        // The quiz is now saved, not open for join
+                        Toast.makeText(requireContext(), "Quiz saved (status=created).", Toast.LENGTH_SHORT).show()
+
+                        // Clear local questions if you want, or keep them for further edits
+                        viewModel.clearQuestions()
+                    },
+                    onFailure = { e ->
+                        Toast.makeText(requireContext(), "Failed to save quiz: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                )
+            },
+            onFailure = { e ->
+                Toast.makeText(requireContext(), "Failed to generate PIN: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    /**
+     * "Set Quiz" -> Creates a quiz with status = "open_for_join"
+     * so that players can join with the generated PIN.
+     */
     private fun handleCreateQuiz() {
         val questions = viewModel.questions.value ?: emptyList()
         if (questions.isEmpty()) {
@@ -133,7 +191,7 @@ class HostFragment : Fragment() {
                     "pincode" to pin,
                     "questions" to questions.map { it.toMap() },
                     "participants" to emptyList<Map<String, Any>>(),
-                    "status" to Constants.STATUS_OPEN_FOR_JOIN,
+                    "status" to Constants.STATUS_OPEN_FOR_JOIN,  // <--- "open_for_join" here
                     "createdAt" to FieldValue.serverTimestamp()
                 )
 
@@ -141,10 +199,10 @@ class HostFragment : Fragment() {
                     quizId = quizId,
                     quizData = quizData,
                     onSuccess = {
-                        // Clear local questions
+                        // The quiz is now open for join
                         viewModel.clearQuestions()
 
-                        // Navigate to HostLobbyFragment (which shows the PIN & participants)
+                        // Navigate to HostLobbyFragment
                         val lobbyFragment = HostLobbyFragment.newInstance(quizId, pin)
                         parentFragmentManager.beginTransaction()
                             .replace(R.id.container, lobbyFragment)

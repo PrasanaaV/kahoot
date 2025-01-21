@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
 import com.example.kahoot.R
-import com.example.kahoot.host.HostFragment
 import com.google.firebase.auth.FirebaseAuth
 
 class HostLoginFragment : Fragment() {
@@ -77,7 +76,7 @@ class HostLoginFragment : Fragment() {
                 progressBar.visibility = View.GONE
                 if (task.isSuccessful) {
                     Toast.makeText(requireContext(), "Sign in successful!", Toast.LENGTH_SHORT).show()
-                    navigateToHostFragment()
+                    navigateToHostDashboardFragment()
                 } else {
                     val message = task.exception?.localizedMessage ?: "Login failed."
                     Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
@@ -92,7 +91,7 @@ class HostLoginFragment : Fragment() {
                 progressBar.visibility = View.GONE
                 if (task.isSuccessful) {
                     Toast.makeText(requireContext(), "Account created successfully!", Toast.LENGTH_SHORT).show()
-                    navigateToHostFragment()
+                    navigateToHostDashboardFragment()
                 } else {
                     val message = task.exception?.localizedMessage ?: "Registration failed."
                     Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
@@ -100,9 +99,9 @@ class HostLoginFragment : Fragment() {
             }
     }
 
-    private fun navigateToHostFragment() {
+    private fun navigateToHostDashboardFragment() {
         parentFragmentManager.beginTransaction()
-            .replace(R.id.container, HostFragment())
+            .replace(R.id.container, HostDashboardFragment())
             .commit()
     }
 }

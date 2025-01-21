@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hostFragmentRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
@@ -10,37 +11,43 @@
         android:padding="16dp"
         android:orientation="vertical">
 
+        <!-- Question Input -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Enter your question"
-            android:textSize="16sp"/>
+            android:text="Enter Question:" />
 
         <EditText
             android:id="@+id/questionInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Enter your question" />
+            android:hint="Question" />
 
+        <!-- Time Limit Input -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Time Limit (seconds)"
-            android:textSize="16sp"/>
+            android:layout_marginTop="12dp"
+            android:text="Time Limit (Seconds):" />
 
         <EditText
             android:id="@+id/timeLimitInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Time Limit (seconds)" />
+            android:hint="30" />
+
+        <!-- Options -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Options:" />
 
         <EditText
             android:id="@+id/optionAInput"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Option A"
-            android:layout_marginTop="16dp" />
+            android:hint="Option A" />
 
         <EditText
             android:id="@+id/optionBInput"
@@ -60,11 +67,18 @@
             android:layout_height="wrap_content"
             android:hint="Option D" />
 
+        <!-- Correct Option Spinner -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Correct Option:" />
+
         <Spinner
             android:id="@+id/correctOptionSpinner"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" />
+            android:layout_marginBottom="12dp" />
 
         <!-- Buttons -->
         <Button
@@ -72,20 +86,28 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Add Question"
-            android:layout_marginTop="16dp" />
+            android:layout_marginTop="8dp" />
+
+        <Button
+            android:id="@+id/saveQuizButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Save Quiz"
+            android:layout_marginTop="8dp" />
 
         <Button
             android:id="@+id/setQuizButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Set Quiz"
+            android:text="Set Quiz (Open for Join)"
             android:layout_marginTop="8dp" />
 
-        <!-- ListView for questions -->
+        <!-- List of added questions -->
         <ListView
             android:id="@+id/questionsListView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp" />
+
     </LinearLayout>
 </ScrollView>

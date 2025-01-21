@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import android.widget.Button
 import androidx.fragment.app.Fragment
 import com.example.kahoot.R
-import com.example.kahoot.host.HostFragment
 import com.example.kahoot.player.PinEntryFragment
 import com.google.firebase.auth.FirebaseAuth
 
@@ -30,9 +29,9 @@ class RoleSelectionFragment : Fragment() {
                     .addToBackStack(null)
                     .commit()
             } else {
-                // Already logged in -> go directly to HostFragment
+                // Already logged in -> go to HostDashboardFragment
                 parentFragmentManager.beginTransaction()
-                    .replace(R.id.container, HostFragment())
+                    .replace(R.id.container, HostDashboardFragment())
                     .addToBackStack(null)
                     .commit()
             }
