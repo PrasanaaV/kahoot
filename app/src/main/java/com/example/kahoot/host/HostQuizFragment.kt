@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.airbnb.lottie.LottieAnimationView
 import com.example.kahoot.R
 import com.example.kahoot.player.ScoreboardFragment
 import com.example.kahoot.utils.Constants
@@ -24,6 +25,8 @@ class HostQuizFragment : Fragment() {
     private lateinit var questionTextView: TextView
     private lateinit var countdownText: TextView
     private lateinit var participantsProgressText: TextView
+    private lateinit var progressAnimation: LottieAnimationView
+    private var totalQuestions: Int = 0
 
     companion object {
         private const val ARG_QUIZ_ID = "quiz_id"
@@ -50,6 +53,7 @@ class HostQuizFragment : Fragment() {
         questionTextView = view.findViewById(R.id.questionTextView)
         countdownText = view.findViewById(R.id.countdownText)
         participantsProgressText = view.findViewById(R.id.participantsProgressText)
+        progressAnimation = view.findViewById(R.id.progressAnimation)
         
         listenToQuizChanges()
         return view
@@ -97,6 +101,12 @@ class HostQuizFragment : Fragment() {
                 quizRef.update("status", Constants.STATUS_ENDED)
                 return@addSnapshotListener
             }
+
+            totalQuestions = questions.size
+
+            // Mettre à jour la barre de progression
+            val progress = (currentQuestionIndex.toFloat() + 1) / totalQuestions
+            progressAnimation.progress = progress
 
             val currentQuestion = questions[currentQuestionIndex]
             val questionText = currentQuestion["questionText"] as? String ?: "No question"

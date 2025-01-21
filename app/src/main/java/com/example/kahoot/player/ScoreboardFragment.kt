@@ -8,6 +8,7 @@ import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import com.airbnb.lottie.LottieAnimationView
 import com.example.kahoot.R
 import com.google.firebase.firestore.FirebaseFirestore
 
@@ -30,6 +31,7 @@ class ScoreboardFragment : Fragment() {
     private lateinit var titleTextView: TextView
     private lateinit var listView: ListView
     private lateinit var adapter: ArrayAdapter<String>
+    private lateinit var confettiAnimation: LottieAnimationView
     private val scoreboardList = mutableListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,12 +47,24 @@ class ScoreboardFragment : Fragment() {
         
         titleTextView = view.findViewById(R.id.titleText)
         listView = view.findViewById(R.id.scoreListView)
+        confettiAnimation = view.findViewById(R.id.confettiAnimation)
 
         adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, scoreboardList)
         listView.adapter = adapter
 
+        // Démarrer l'animation des confettis
+        confettiAnimation.apply {
+            playAnimation()
+            repeatCount = 3 // Répéter 3 fois puis s'arrêter
+        }
+
         loadScores()
         return view
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        confettiAnimation.cancelAnimation()
     }
 
     private fun loadScores() {

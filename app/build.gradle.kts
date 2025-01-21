@@ -53,4 +53,6 @@ dependencies {
     implementation(libs.material.v190)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment.ktx)
+    // Lottie Animation
+    implementation(libs.lottie)
 }

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/playerQuizContainer"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -31,6 +32,16 @@
             android:text="Question?"
             android:textSize="18sp"
             android:layout_marginBottom="12dp"/>
+
+        <com.airbnb.lottie.LottieAnimationView
+            android:id="@+id/progressAnimation"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginHorizontal="4dp"
+            android:layout_marginBottom="24dp"
+            app:lottie_rawRes="@raw/progress_bar"
+            app:lottie_autoPlay="false"
+            app:lottie_loop="false"/>
 
         <Button
             android:id="@+id/optionButton1"

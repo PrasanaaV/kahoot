@@ -14,14 +14,13 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import com.airbnb.lottie.LottieAnimationView
 import com.example.kahoot.R
 import com.example.kahoot.utils.Constants
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ktx.toObject
-import com.google.firebase.firestore.ktx.toObjects
 
 class PlayerQuizFragment : Fragment() {
 
@@ -34,9 +33,11 @@ class PlayerQuizFragment : Fragment() {
     private lateinit var questionTextView: TextView
     private lateinit var optionButtons: List<Button>
     private lateinit var countdownText: TextView
+    private lateinit var progressAnimation: LottieAnimationView
 
     // Current question data
     private var currentQuestionIndex: Int = 0
+    private var totalQuestions: Int = 0
     private var timer: CountDownTimer? = null
     private var quizStatus: String = ""
 
@@ -67,6 +68,7 @@ class PlayerQuizFragment : Fragment() {
         questionLayout = view.findViewById(R.id.questionLayout)
         questionTextView = view.findViewById(R.id.questionTextView)
         countdownText = view.findViewById(R.id.countdownText)
+        progressAnimation = view.findViewById(R.id.progressAnimation)
 
         optionButtons = listOf(
             view.findViewById(R.id.optionButton1),
@@ -94,29 +96,15 @@ class PlayerQuizFragment : Fragment() {
         val qId = quizId ?: return
         val quizRef = db.collection("quizzes").document(qId)
 
-        Log.d("Quiz", "Setting up snapshot listener for quizId: $qId")
         quizRef.addSnapshotListener { snapshot, e ->
-            if (e != null) {
-                Log.e("Quiz", "Listen failed.", e)
-                return@addSnapshotListener
-            }
+            if (e != null || snapshot == null || !snapshot.exists() || !isAdded) return@addSnapshotListener
 
-            if (snapshot == null || !snapshot.exists()) {
-                Log.d("Quiz", "Current data: null")
-                return@addSnapshotListener
-            }
-
-            if (!isAdded) return@addSnapshotListener
-
-            Log.d("Quiz", "Current data: ${snapshot.data}")
-            
             quizStatus = snapshot.getString("status") ?: ""
             currentQuestionIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
-
-            Log.d("Quiz", "Status: $quizStatus, Current Question Index: $currentQuestionIndex")
+            val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
+            totalQuestions = questions.size
 
             if (quizStatus == Constants.STATUS_ENDED) {
-                // Navigate to scoreboard when quiz ends
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.container, ScoreboardFragment.newInstance(qId))
                     .commit()
@@ -131,7 +119,6 @@ class PlayerQuizFragment : Fragment() {
             }
 
             if (quizStatus != Constants.STATUS_IN_PROGRESS) {
-                if (!isAdded) return@addSnapshotListener
                 Toast.makeText(requireContext(), "Quiz not in progress.", Toast.LENGTH_SHORT).show()
                 return@addSnapshotListener
             }
@@ -139,10 +126,11 @@ class PlayerQuizFragment : Fragment() {
             waitingLayout.visibility = View.GONE
             questionLayout.visibility = View.VISIBLE
 
-            val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
-            
+            // Mettre à jour la barre de progression
+            val progress = (currentQuestionIndex.toFloat() + 1) / totalQuestions
+            progressAnimation.progress = progress
+
             if (currentQuestionIndex >= questions.size) {
-                // Si nous sommes après la dernière question, terminer le quiz
                 if (quizStatus != Constants.STATUS_ENDED) {
                     quizRef.update("status", Constants.STATUS_ENDED)
                 }
@@ -154,11 +142,8 @@ class PlayerQuizFragment : Fragment() {
             val options = currentQuestion["options"] as? List<String> ?: listOf()
             val timeLimit = (currentQuestion["timeLimitSeconds"] as? Number)?.toInt() ?: 30
 
-            Log.d("Quiz", "Current Question: $questionText, Time Limit: $timeLimit seconds")
-
             questionTextView.text = questionText
             
-            // Reset button colors and update options for new question
             resetButtonColors()
             
             optionButtons.forEachIndexed { index, button ->
@@ -184,7 +169,6 @@ class PlayerQuizFragment : Fragment() {
 
             override fun onFinish() {
                 if (!isAdded) return
-                // If time is up and player hasn't answered, submit a no-answer (-1)
                 if (optionButtons.any { it.isEnabled }) {
                     submitAnswer(-1)
                 }
@@ -198,7 +182,6 @@ class PlayerQuizFragment : Fragment() {
         
         val quizRef = db.collection("quizzes").document(qId)
         
-        // Disable all option buttons after answering
         optionButtons.forEach { it.isEnabled = false }
         
         val response = hashMapOf(
@@ -210,13 +193,10 @@ class PlayerQuizFragment : Fragment() {
 
         quizRef.collection("responses").add(response)
             .addOnSuccessListener {
-                Log.d("Quiz", "Response submitted successfully")
-                // After submitting answer, show correct/incorrect colors
                 showAnswerColors(quizRef, selectedOptionIndex)
                 checkAllParticipantsAnswered(quizRef)
             }
             .addOnFailureListener { e ->
-                Log.e("Quiz", "Error submitting response", e)
                 if (isAdded) {
                     Toast.makeText(requireContext(), "Failed to submit answer", Toast.LENGTH_SHORT).show()
                 }
@@ -233,7 +213,6 @@ class PlayerQuizFragment : Fragment() {
             val currentQuestion = questions[currentQuestionIndex] as? Map<String, Any>
             val correctOptionIndex = currentQuestion?.get("correctOptionIndex") as? Long ?: return@addOnSuccessListener
 
-            // Color all buttons based on correctness
             optionButtons.forEachIndexed { index, button ->
                 val backgroundColor = when (index) {
                     correctOptionIndex.toInt() -> ContextCompat.getColor(requireContext(), R.color.correct_answer)
@@ -246,7 +225,6 @@ class PlayerQuizFragment : Fragment() {
                 }
                 
                 button.backgroundTintList = ColorStateList.valueOf(backgroundColor)
-                // Keep text white and visible even when button is disabled
                 button.setTextColor(Color.WHITE)
             }
         }
@@ -271,7 +249,6 @@ class PlayerQuizFragment : Fragment() {
                 .get()
                 .addOnSuccessListener { responses ->
                     if (responses.size() >= participants.size) {
-                        // All participants have answered, move to next question
                         moveToNextQuestion(quizRef)
                     }
                 }
@@ -285,13 +262,10 @@ class PlayerQuizFragment : Fragment() {
             val currentIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
             val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
             
-            // Passer à la question suivante
             val nextIndex = currentIndex + 1
             if (nextIndex < questions.size) {
-                // S'il y a encore des questions, passer à la suivante
                 quizRef.update("currentQuestionIndex", nextIndex)
             } else {
-                // Si c'était la dernière question, terminer le quiz
                 quizRef.update("status", Constants.STATUS_ENDED)
             }
         }
