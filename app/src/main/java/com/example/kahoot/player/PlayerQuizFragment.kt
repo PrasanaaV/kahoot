@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment
 import com.airbnb.lottie.LottieAnimationView
 import com.example.kahoot.R
 import com.example.kahoot.utils.Constants
+import com.example.kahoot.utils.NotificationHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
@@ -111,68 +112,75 @@ class PlayerQuizFragment : Fragment() {
         quizRef.addSnapshotListener { snapshot, e ->
             if (e != null || snapshot == null || !snapshot.exists() || !isAdded) return@addSnapshotListener
 
-            quizStatus = snapshot.getString("status") ?: ""
+            val status = snapshot.getString("status") ?: ""
             currentQuestionIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
             val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
             totalQuestions = questions.size
 
-            if (quizStatus == Constants.STATUS_ENDED) {
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.container, ScoreboardFragment.newInstance(qId))
-                    .commit()
-                return@addSnapshotListener
-            }
-
-            if (quizStatus == Constants.STATUS_OPEN_FOR_JOIN) {
-                waitingLayout.visibility = View.VISIBLE
-                questionLayout.visibility = View.GONE
-                waitingLayout.text = "Waiting for quiz to start..."
-                return@addSnapshotListener
-            }
-
-            if (quizStatus != Constants.STATUS_IN_PROGRESS) {
-                Toast.makeText(requireContext(), "Quiz not in progress.", Toast.LENGTH_SHORT).show()
-                return@addSnapshotListener
-            }
-
-            waitingLayout.visibility = View.GONE
-            questionLayout.visibility = View.VISIBLE
-
-            if (currentQuestionIndex >= questions.size) {
-                if (quizStatus != Constants.STATUS_ENDED) {
-                    quizRef.update("status", Constants.STATUS_ENDED)
+            when (status) {
+                Constants.STATUS_IN_PROGRESS -> {
+                    if (currentQuestionIndex < questions.size) {
+                        showCurrentQuestion(questions[currentQuestionIndex])
+                        // Notifier seulement après avoir affiché la question
+                        if (currentQuestionIndex == 0) {
+                            questionLayout.post {
+                                context?.let { NotificationHelper.showQuizStartNotification(it) }
+                            }
+                        }
+                    }
                 }
-                return@addSnapshotListener
-            }
-
-            // Réinitialiser les états pour la nouvelle question
-            canMoveToNextQuestion = false
-            hasSubmittedAnswer = false
-
-            val currentQuestion = questions[currentQuestionIndex]
-            val questionText = currentQuestion["questionText"] as? String ?: "No question"
-            val options = currentQuestion["options"] as? List<String> ?: listOf()
-            val timeLimit = (currentQuestion["timeLimitSeconds"] as? Number)?.toInt() ?: 30
-
-            // Mettre à jour la barre de progression
-            progressAnimation.progress = currentQuestionIndex.toFloat() / (totalQuestions - 1)
-
-            questionTextView.text = "Question ${currentQuestionIndex + 1}/$totalQuestions\n$questionText"
-            
-            resetButtonColors()
-            
-            optionButtons.forEachIndexed { index, button ->
-                if (index < options.size) {
-                    button.visibility = View.VISIBLE
-                    button.text = options[index]
-                    button.isEnabled = true
-                } else {
-                    button.visibility = View.GONE
+                Constants.STATUS_ENDED -> {
+                    navigateToScoreboard()
+                }
+                Constants.STATUS_OPEN_FOR_JOIN -> {
+                    showWaitingScreen()
                 }
             }
-            
-            startTimer(timeLimit.toLong())
         }
+    }
+
+    private fun showCurrentQuestion(question: Map<String, Any>) {
+        waitingLayout.visibility = View.GONE
+        questionLayout.visibility = View.VISIBLE
+
+        // Réinitialiser les états pour la nouvelle question
+        canMoveToNextQuestion = false
+        hasSubmittedAnswer = false
+
+        val questionText = question["questionText"] as? String ?: "No question"
+        val options = question["options"] as? List<String> ?: listOf()
+        val timeLimit = (question["timeLimitSeconds"] as? Number)?.toInt() ?: 30
+
+        // Mettre à jour la barre de progression
+        progressAnimation.progress = currentQuestionIndex.toFloat() / (totalQuestions - 1)
+
+        questionTextView.text = "Question ${currentQuestionIndex + 1}/$totalQuestions\n$questionText"
+        
+        resetButtonColors()
+        
+        optionButtons.forEachIndexed { index, button ->
+            if (index < options.size) {
+                button.visibility = View.VISIBLE
+                button.text = options[index]
+                button.isEnabled = true
+            } else {
+                button.visibility = View.GONE
+            }
+        }
+        
+        startTimer(timeLimit.toLong())
+    }
+
+    private fun navigateToScoreboard() {
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.container, ScoreboardFragment.newInstance(quizId ?: return))
+            .commit()
+    }
+
+    private fun showWaitingScreen() {
+        waitingLayout.visibility = View.VISIBLE
+        questionLayout.visibility = View.GONE
+        waitingLayout.text = "Waiting for quiz to start..."
     }
 
     private fun startTimer(timeLimitSeconds: Long) {
