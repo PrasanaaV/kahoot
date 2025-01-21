@@ -68,7 +68,6 @@ class HostLoginFragment : Fragment() {
         registerButton = view.findViewById(R.id.registerButton)
         progressBar = view.findViewById(R.id.loginProgressBar)
         googleSignInButton = view.findViewById(R.id.googleSignInButton)
-        githubSignInButton = view.findViewById(R.id.githubSignInButton)
 
         // Existing email/password sign-in
         signInButton.setOnClickListener {
