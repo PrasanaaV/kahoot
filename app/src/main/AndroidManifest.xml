@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -11,6 +14,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Kahoot"
         tools:targetApi="31">
+        
         <activity
             android:name=".main.MainActivity"
             android:exported="true"
@@ -18,6 +22,19 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            
+            <!-- Deep Link Configuration -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+                <!-- Deep links using custom scheme -->
+                <data android:scheme="kahoot" android:host="join" />
+                
+                <!-- Deep links using https (optional, pour le futur) -->
+                <data android:scheme="https" android:host="kahoot-app.com" android:pathPrefix="/join" />
             </intent-filter>
         </activity>
     </application>

@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.kahoot"
-        minSdk = 24
+        minSdk = 34
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -38,7 +38,6 @@ android {
 
 dependencies {
 
-    // From your libs.versions.toml catalog
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -46,24 +45,14 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
-
     implementation(libs.androidx.appcompat.v161)
     implementation(libs.material.v190)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment.ktx)
-
     // Lottie Animation
     implementation(libs.lottie)
-
-    // --- Ensure these use double-quotes for Kotlin DSL ---
-    // Firebase Auth (explicit version)
-    implementation("com.google.firebase:firebase-auth:21.3.0")
-
-    // Play Services Auth for Google Sign-In
-    implementation("com.google.android.gms:play-services-auth:20.6.0")
 }

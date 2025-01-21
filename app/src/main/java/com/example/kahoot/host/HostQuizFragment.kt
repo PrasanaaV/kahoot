@@ -14,6 +14,7 @@ import com.example.kahoot.player.ScoreboardFragment
 import com.example.kahoot.utils.Constants
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FieldValue
+import com.google.firebase.firestore.DocumentReference
 
 class HostQuizFragment : Fragment() {
 
@@ -56,7 +57,51 @@ class HostQuizFragment : Fragment() {
         progressAnimation = view.findViewById(R.id.progressAnimation)
         
         listenToQuizChanges()
+        listenToQuestionControl()
         return view
+    }
+
+    private fun listenToQuestionControl() {
+        val qId = quizId ?: return
+        val quizRef = db.collection("quizzes").document(qId)
+
+        quizRef.collection("questionControl")
+            .document("status")
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    Log.e("HostQuizFragment", "Error listening to question control", e)
+                    return@addSnapshotListener
+                }
+
+                if (!isAdded || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+
+                Log.d("HostQuizFragment", "Received question control update: ${snapshot.data}")
+
+                val allAnswered = snapshot.getBoolean("allAnswered") ?: false
+                val questionIndex = snapshot.getLong("questionIndex")?.toInt() ?: -1
+                val totalResponses = snapshot.getLong("totalResponses")?.toInt() ?: 0
+                val totalParticipants = snapshot.getLong("totalParticipants")?.toInt() ?: 0
+
+                Log.d("HostQuizFragment", "Question control - allAnswered: $allAnswered, questionIndex: $questionIndex, current: $currentQuestionIndex")
+
+                if (allAnswered && questionIndex == currentQuestionIndex) {
+                    Log.d("HostQuizFragment", "All participants answered ($totalResponses/$totalParticipants). Moving to next question.")
+                    // Attendre 3 secondes avant de passer à la question suivante
+                    view?.postDelayed({
+                        if (isAdded) {
+                            moveToNextQuestion(quizRef)
+                            // Réinitialiser le statut
+                            snapshot.reference.delete()
+                                .addOnSuccessListener {
+                                    Log.d("HostQuizFragment", "Successfully deleted question control status")
+                                }
+                                .addOnFailureListener { error ->
+                                    Log.e("HostQuizFragment", "Failed to delete question control status", error)
+                                }
+                        }
+                    }, 3000)
+                }
+            }
     }
 
     private fun listenToQuizChanges() {
@@ -90,11 +135,19 @@ class HostQuizFragment : Fragment() {
                 return@addSnapshotListener
             }
 
+            // Vérifier si on doit forcer le passage à la question suivante
+            val forceNext = snapshot.getBoolean("forceNextQuestion") ?: false
+            if (forceNext) {
+                timer?.cancel()
+                moveToNextQuestion(quizRef)
+                quizRef.update("forceNextQuestion", false)
+                return@addSnapshotListener
+            }
+
             val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
             currentQuestionIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
+            totalQuestions = questions.size
             val participants = snapshot.get("participants") as? List<Map<String, Any>> ?: emptyList()
-
-            Log.d("Quiz", "Current question index: $currentQuestionIndex")
 
             if (currentQuestionIndex >= questions.size) {
                 if (!isAdded) return@addSnapshotListener
@@ -102,43 +155,28 @@ class HostQuizFragment : Fragment() {
                 return@addSnapshotListener
             }
 
-            totalQuestions = questions.size
-
-            // Mettre à jour la barre de progression
-            val progress = (currentQuestionIndex.toFloat() + 1) / totalQuestions
-            progressAnimation.progress = progress
-
             val currentQuestion = questions[currentQuestionIndex]
             val questionText = currentQuestion["questionText"] as? String ?: "No question"
             val timeLimit = (currentQuestion["timeLimitSeconds"] as? Number)?.toInt() ?: 30
 
-            // Listen to responses in real-time
+            // Mettre à jour l'interface
+            questionTextView.text = "Question ${currentQuestionIndex + 1}/$totalQuestions\n$questionText"
+            progressAnimation.progress = currentQuestionIndex.toFloat() / (totalQuestions - 1)
+
+            // Vérifier les réponses actuelles
             quizRef.collection("responses")
                 .whereEqualTo("questionIndex", currentQuestionIndex)
-                .addSnapshotListener { responseSnapshot, responseError ->
-                    if (responseError != null) {
-                        Log.e("Quiz", "Error listening to responses", responseError)
-                        return@addSnapshotListener
-                    }
-
-                    if (!isAdded) return@addSnapshotListener
-
-                    val responseCount = responseSnapshot?.size() ?: 0
-                    participantsProgressText.text = "Responses: $responseCount/${participants.size}"
-                    
-                    // If all participants have answered, cancel timer and move to next question
-                    if (responseCount >= participants.size) {
-                        timer?.cancel()
-                        moveToNextQuestion()
-                    }
+                .get()
+                .addOnSuccessListener { responses ->
+                    if (!isAdded) return@addOnSuccessListener
+                    updateParticipantsProgress(responses.size(), participants.size)
                 }
 
-            questionTextView.text = questionText
-            startTimer(timeLimit.toLong())
+            startTimer(timeLimit.toLong(), quizRef)
         }
     }
 
-    private fun startTimer(timeLimitSeconds: Long) {
+    private fun startTimer(timeLimitSeconds: Long, quizRef: DocumentReference) {
         timer?.cancel()
         timer = object : CountDownTimer(timeLimitSeconds * 1000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
@@ -148,50 +186,23 @@ class HostQuizFragment : Fragment() {
 
             override fun onFinish() {
                 if (!isAdded) return
-                submitNoAnswerForRemainingParticipants()
+                countdownText.text = "Time's up!"
+                // Attendre 3 secondes pour montrer les réponses puis passer à la question suivante
+                view?.postDelayed({
+                    if (isAdded) {
+                        moveToNextQuestion(quizRef)
+                    }
+                }, 3000)
             }
         }.start()
     }
 
-    private fun submitNoAnswerForRemainingParticipants() {
-        val qId = quizId ?: return
-        val quizRef = db.collection("quizzes").document(qId)
-
-        quizRef.get().addOnSuccessListener { snapshot ->
-            if (!isAdded) return@addOnSuccessListener
-
-            val participants = snapshot.get("participants") as? List<Map<String, Any>> ?: emptyList()
-            
-            // Get current responses
-            quizRef.collection("responses")
-                .whereEqualTo("questionIndex", currentQuestionIndex)
-                .get()
-                .addOnSuccessListener { responses ->
-                    // Find participants who haven't answered
-                    val respondedParticipants = responses.documents.mapNotNull { it.getString("participantId") }
-                    val nonRespondedParticipants = participants.mapNotNull { it["uid"] as? String }
-                        .filter { it !in respondedParticipants }
-
-                    // Submit no-answer (-1) for each participant who hasn't answered
-                    nonRespondedParticipants.forEach { participantId ->
-                        val response = hashMapOf(
-                            "participantId" to participantId,
-                            "questionIndex" to currentQuestionIndex,
-                            "selectedOption" to -1,
-                            "timestamp" to FieldValue.serverTimestamp()
-                        )
-                        quizRef.collection("responses").add(response)
-                    }
-
-                    // After submitting no-answers, move to next question
-                    moveToNextQuestion()
-                }
-        }
+    private fun updateParticipantsProgress(responsesCount: Int, totalParticipants: Int) {
+        participantsProgressText.text = "Responses: $responsesCount/$totalParticipants"
     }
 
-    private fun moveToNextQuestion() {
-        val qId = quizId ?: return
-        val quizRef = db.collection("quizzes").document(qId)
+    private fun moveToNextQuestion(quizRef: DocumentReference) {
+        Log.d("HostQuizFragment", "Moving to next question")
         
         quizRef.get().addOnSuccessListener { snapshot ->
             if (!isAdded) return@addOnSuccessListener
@@ -199,10 +210,21 @@ class HostQuizFragment : Fragment() {
             val currentIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
             val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
             
-            if (currentIndex < questions.size - 1) {
-                quizRef.update("currentQuestionIndex", currentIndex + 1)
+            val nextIndex = currentIndex + 1
+            if (nextIndex < questions.size) {
+                Log.d("HostQuizFragment", "Updating currentQuestionIndex to $nextIndex")
+                quizRef.update(
+                    mapOf(
+                        "currentQuestionIndex" to nextIndex,
+                        "lastQuestionChange" to FieldValue.serverTimestamp()
+                    )
+                ).addOnSuccessListener {
+                    Log.d("HostQuizFragment", "Successfully updated question index")
+                }.addOnFailureListener { e ->
+                    Log.e("HostQuizFragment", "Failed to update question index", e)
+                }
             } else {
-                // Quiz is finished, update status to ended
+                Log.d("HostQuizFragment", "Quiz finished, updating status to ENDED")
                 quizRef.update("status", Constants.STATUS_ENDED)
             }
         }

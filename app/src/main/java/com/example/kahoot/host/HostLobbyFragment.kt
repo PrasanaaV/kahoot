@@ -1,5 +1,6 @@
 package com.example.kahoot.host
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -22,6 +23,7 @@ class HostLobbyFragment : Fragment() {
     private lateinit var participantsListView: ListView
     private lateinit var launchQuizButton: Button
     private lateinit var openQuizButton: Button
+    private lateinit var shareButton: ImageButton
     private var snapshotListener: ListenerRegistration? = null
 
     companion object {
@@ -55,6 +57,7 @@ class HostLobbyFragment : Fragment() {
         participantsListView = view.findViewById(R.id.participantsListView)
         launchQuizButton = view.findViewById(R.id.launchQuizButton)
         openQuizButton = view.findViewById(R.id.openQuizButton)
+        shareButton = view.findViewById(R.id.shareButton)
 
         adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, participantsNames)
         participantsListView.adapter = adapter
@@ -63,9 +66,22 @@ class HostLobbyFragment : Fragment() {
 
         launchQuizButton.setOnClickListener { launchQuiz() }
         openQuizButton.setOnClickListener { openQuiz() }
+        setupShareButton()
 
         setupQuizListener()
         return view
+    }
+
+    private fun setupShareButton() {
+        shareButton.setOnClickListener {
+            val pin = pincode ?: return@setOnClickListener
+            val shareIntent = Intent().apply {
+                action = Intent.ACTION_SEND
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, "Join my Kahoot Quiz! PIN: $pin")
+            }
+            startActivity(Intent.createChooser(shareIntent, "Share PIN"))
+        }
     }
 
     override fun onDestroyView() {
