@@ -8,5 +8,6 @@ data class Quiz(
     val questions: List<Question> = emptyList(),
     val participants: List<Map<String, Any>> = emptyList(),
     val status: String = "open_for_join",
+    val currentQuestionIndex: Int = 0,
     val createdAt: Any = FieldValue.serverTimestamp()
 )
