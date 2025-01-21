@@ -41,6 +41,9 @@ class PlayerQuizFragment : Fragment() {
     private var timer: CountDownTimer? = null
     private var quizStatus: String = ""
 
+    private var canMoveToNextQuestion = false
+    private var hasSubmittedAnswer = false
+
     companion object {
         private const val ARG_QUIZ_ID = "arg_quiz_id"
 
@@ -90,6 +93,15 @@ class PlayerQuizFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         timer?.cancel()
+        timer = null
+        canMoveToNextQuestion = false
+        hasSubmittedAnswer = false
+    }
+
+    override fun onPause() {
+        super.onPause()
+        timer?.cancel()
+        timer = null
     }
 
     private fun listenToQuizChanges() {
@@ -126,10 +138,6 @@ class PlayerQuizFragment : Fragment() {
             waitingLayout.visibility = View.GONE
             questionLayout.visibility = View.VISIBLE
 
-            // Mettre à jour la barre de progression
-            val progress = (currentQuestionIndex.toFloat() + 1) / totalQuestions
-            progressAnimation.progress = progress
-
             if (currentQuestionIndex >= questions.size) {
                 if (quizStatus != Constants.STATUS_ENDED) {
                     quizRef.update("status", Constants.STATUS_ENDED)
@@ -137,12 +145,19 @@ class PlayerQuizFragment : Fragment() {
                 return@addSnapshotListener
             }
 
+            // Réinitialiser les états pour la nouvelle question
+            canMoveToNextQuestion = false
+            hasSubmittedAnswer = false
+
             val currentQuestion = questions[currentQuestionIndex]
             val questionText = currentQuestion["questionText"] as? String ?: "No question"
             val options = currentQuestion["options"] as? List<String> ?: listOf()
             val timeLimit = (currentQuestion["timeLimitSeconds"] as? Number)?.toInt() ?: 30
 
-            questionTextView.text = questionText
+            // Mettre à jour la barre de progression
+            progressAnimation.progress = currentQuestionIndex.toFloat() / (totalQuestions - 1)
+
+            questionTextView.text = "Question ${currentQuestionIndex + 1}/$totalQuestions\n$questionText"
             
             resetButtonColors()
             
@@ -150,6 +165,7 @@ class PlayerQuizFragment : Fragment() {
                 if (index < options.size) {
                     button.visibility = View.VISIBLE
                     button.text = options[index]
+                    button.isEnabled = true
                 } else {
                     button.visibility = View.GONE
                 }
@@ -160,25 +176,41 @@ class PlayerQuizFragment : Fragment() {
     }
 
     private fun startTimer(timeLimitSeconds: Long) {
+        // Réinitialiser les états
+        canMoveToNextQuestion = false
+        hasSubmittedAnswer = false
+        
         timer?.cancel()
+        timer = null
+
+        countdownText.text = "Time left: ${timeLimitSeconds}s"
+
         timer = object : CountDownTimer(timeLimitSeconds * 1000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
-                if (!isAdded) return
+                if (!isAdded) {
+                    cancel()
+                    return
+                }
                 countdownText.text = "Time left: ${millisUntilFinished / 1000}s"
             }
 
             override fun onFinish() {
                 if (!isAdded) return
-                if (optionButtons.any { it.isEnabled }) {
+                countdownText.text = "Time's up!"
+                if (!hasSubmittedAnswer) {
                     submitAnswer(-1)
                 }
+                canMoveToNextQuestion = true
+                checkAllParticipantsAnswered(db.collection("quizzes").document(quizId ?: return))
             }
         }.start()
     }
 
     private fun submitAnswer(selectedOptionIndex: Int) {
         val qId = quizId ?: return
-        if (!isAdded) return
+        if (!isAdded || hasSubmittedAnswer) return
+        
+        hasSubmittedAnswer = true
         
         val quizRef = db.collection("quizzes").document(qId)
         
@@ -199,6 +231,8 @@ class PlayerQuizFragment : Fragment() {
             .addOnFailureListener { e ->
                 if (isAdded) {
                     Toast.makeText(requireContext(), "Failed to submit answer", Toast.LENGTH_SHORT).show()
+                    hasSubmittedAnswer = false
+                    optionButtons.forEach { it.isEnabled = true }
                 }
             }
     }
@@ -239,35 +273,47 @@ class PlayerQuizFragment : Fragment() {
     }
 
     private fun checkAllParticipantsAnswered(quizRef: DocumentReference) {
+        if (!isAdded) return
+
         quizRef.get().addOnSuccessListener { snapshot ->
             if (!isAdded) return@addOnSuccessListener
 
             val participants = snapshot.get("participants") as? List<Map<String, Any>> ?: emptyList()
+            val currentStatus = snapshot.getString("status")
+            
+            // Vérifier si le quiz n'est pas déjà passé à la question suivante
+            if (currentStatus != Constants.STATUS_IN_PROGRESS) return@addOnSuccessListener
             
             quizRef.collection("responses")
                 .whereEqualTo("questionIndex", currentQuestionIndex)
                 .get()
                 .addOnSuccessListener { responses ->
+                    if (!isAdded) return@addOnSuccessListener
+
                     if (responses.size() >= participants.size) {
-                        moveToNextQuestion(quizRef)
+                        canMoveToNextQuestion = true
+                        
+                        // Désactiver tous les boutons pendant l'attente
+                        optionButtons.forEach { it.isEnabled = false }
+                        
+                        // Forcer la fin du timer
+                        timer?.cancel()
+                        countdownText.text = "Time's up!"
+                        
+                        // Attendre 3 secondes pour montrer les réponses
+                        questionLayout.postDelayed({
+                            if (isAdded) {
+                                // Forcer la mise à jour du timer côté hôte
+                                quizRef.update("forceNextQuestion", true)
+                            }
+                        }, 3000)
                     }
                 }
         }
     }
 
+    // Supprimer la fonction moveToNextQuestion car seul l'hôte doit gérer cela
     private fun moveToNextQuestion(quizRef: DocumentReference) {
-        quizRef.get().addOnSuccessListener { snapshot ->
-            if (!isAdded) return@addOnSuccessListener
-            
-            val currentIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
-            val questions = snapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
-            
-            val nextIndex = currentIndex + 1
-            if (nextIndex < questions.size) {
-                quizRef.update("currentQuestionIndex", nextIndex)
-            } else {
-                quizRef.update("status", Constants.STATUS_ENDED)
-            }
-        }
+        // Cette fonction ne devrait plus être utilisée dans le PlayerQuizFragment
     }
 }

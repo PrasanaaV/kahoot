@@ -55,6 +55,6 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     // Lottie Animation
     implementation(libs.lottie)
-    // MPAndroidChart for statistics
-    implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+    // MPAndroidChart for graphs
+    implementation(libs.mpandroidchart)
 }

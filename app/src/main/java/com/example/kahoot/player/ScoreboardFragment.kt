@@ -1,5 +1,6 @@
 package com.example.kahoot.player
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +11,12 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.airbnb.lottie.LottieAnimationView
 import com.example.kahoot.R
+import com.github.mikephil.charting.charts.BarChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.BarData
+import com.github.mikephil.charting.data.BarDataSet
+import com.github.mikephil.charting.data.BarEntry
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.google.firebase.firestore.FirebaseFirestore
 
 class ScoreboardFragment : Fragment() {
@@ -32,6 +39,7 @@ class ScoreboardFragment : Fragment() {
     private lateinit var listView: ListView
     private lateinit var adapter: ArrayAdapter<String>
     private lateinit var confettiAnimation: LottieAnimationView
+    private lateinit var correctAnswersChart: BarChart
     private val scoreboardList = mutableListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,6 +56,9 @@ class ScoreboardFragment : Fragment() {
         titleTextView = view.findViewById(R.id.titleText)
         listView = view.findViewById(R.id.scoreListView)
         confettiAnimation = view.findViewById(R.id.confettiAnimation)
+        correctAnswersChart = view.findViewById(R.id.correctAnswersChart)
+
+        setupChart()
 
         adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, scoreboardList)
         listView.adapter = adapter
@@ -60,6 +71,31 @@ class ScoreboardFragment : Fragment() {
 
         loadScores()
         return view
+    }
+
+    private fun setupChart() {
+        correctAnswersChart.apply {
+            description.isEnabled = false
+            legend.isEnabled = false
+            setDrawGridBackground(false)
+            
+            xAxis.apply {
+                position = XAxis.XAxisPosition.BOTTOM
+                setDrawGridLines(false)
+                granularity = 1f
+            }
+            
+            axisLeft.apply {
+                axisMinimum = 0f
+                setDrawGridLines(true)
+            }
+            
+            axisRight.isEnabled = false
+            
+            setTouchEnabled(true)
+            setScaleEnabled(false)
+            setPinchZoom(false)
+        }
     }
 
     override fun onDestroyView() {
@@ -84,6 +120,9 @@ class ScoreboardFragment : Fragment() {
                 username to 0
             }.toMutableMap()
 
+            // Initialize correct answers count per question
+            val correctAnswersPerQuestion = MutableList(questions.size) { 0 }
+
             // Get all responses
             quizRef.collection("responses").get().addOnSuccessListener { responses ->
                 if (!isAdded) return@addOnSuccessListener
@@ -100,23 +139,48 @@ class ScoreboardFragment : Fragment() {
                         // Find participant's username
                         val participant = participants.find { it["uid"] == participantId }
                         val username = participant?.get("username") as? String ?: participantId
-                        
-                        // Only count points if the answer is correct
-                        if (selectedOption != -1 && selectedOption == correctOption?.toInt()) {
+
+                        // Update score if answer is correct
+                        if (correctOption?.toInt() == selectedOption) {
                             scores[username] = (scores[username] ?: 0) + 1
+                            correctAnswersPerQuestion[questionIndex]++
                         }
                     }
                 }
 
-                // Sort scores by descending order and update UI
+                // Update scoreboard list
                 scoreboardList.clear()
                 scores.entries.sortedByDescending { it.value }.forEach { (username, score) ->
-                    scoreboardList.add("$username: $score/${questions.size}")
+                    scoreboardList.add("$username: $score points")
                 }
-                
-                titleTextView.text = "Final Scores"
                 adapter.notifyDataSetChanged()
+
+                // Update chart
+                updateChart(correctAnswersPerQuestion, participants.size)
             }
         }
+    }
+
+    private fun updateChart(correctAnswersPerQuestion: List<Int>, totalParticipants: Int) {
+        val entries = correctAnswersPerQuestion.mapIndexed { index, count ->
+            BarEntry(index.toFloat(), count.toFloat())
+        }
+
+        val dataSet = BarDataSet(entries, "Correct Answers").apply {
+            color = Color.rgb(104, 241, 175)
+            valueTextSize = 12f
+        }
+
+        val barData = BarData(dataSet)
+        correctAnswersChart.data = barData
+
+        // Set X-axis labels (Question numbers)
+        val xLabels = correctAnswersPerQuestion.indices.map { "Q${it + 1}" }
+        correctAnswersChart.xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
+
+        // Set Y-axis maximum to total number of participants
+        correctAnswersChart.axisLeft.axisMaximum = totalParticipants.toFloat()
+
+        correctAnswersChart.invalidate()
     }
 }

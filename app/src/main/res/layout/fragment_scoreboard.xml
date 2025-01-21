@@ -29,15 +29,29 @@
             android:textAlignment="center"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="8dp"/>
 
         <ListView
             android:id="@+id/scoreListView"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="wrap_content"
             android:divider="@android:color/darker_gray"
-            android:dividerHeight="1dp"/>
+            android:dividerHeight="1dp"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Correct Answers per Question"
+            android:textAlignment="center"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp"/>
+
+        <com.github.mikephil.charting.charts.BarChart
+            android:id="@+id/correctAnswersChart"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"/>
 
     </LinearLayout>
 </FrameLayout>

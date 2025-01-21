@@ -19,6 +19,19 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            
+            <!-- Deep Link Configuration -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+                <!-- Deep links using custom scheme -->
+                <data android:scheme="kahoot" android:host="join" />
+                
+                <!-- Deep links using https (optional, pour le futur) -->
+                <data android:scheme="https" android:host="kahoot-app.com" android:pathPrefix="/join" />
+            </intent-filter>
         </activity>
     </application>
 </manifest>
