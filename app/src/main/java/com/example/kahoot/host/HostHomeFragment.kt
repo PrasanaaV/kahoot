@@ -24,17 +24,14 @@ class HostHomeFragment : Fragment() {
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.navigation_quiz -> {
-                    // Example: Show HostFragment or your "create quiz" screen
                     replaceChildFragment(HostFragment())
                     true
                 }
                 R.id.navigation_dashboard -> {
-                    // Example: Show HostDashboardFragment or HostQuizzesListFragment
                     replaceChildFragment(HostQuizzesListFragment())
                     true
                 }
                 R.id.navigation_profile -> {
-                    // Example: Show profile screen
                     replaceChildFragment(HostProfileFragment())
                     true
                 }
@@ -42,7 +39,6 @@ class HostHomeFragment : Fragment() {
             }
         }
 
-        // Default to the middle item (Dashboard)
         bottomNav.selectedItemId = R.id.navigation_dashboard
 
         return view

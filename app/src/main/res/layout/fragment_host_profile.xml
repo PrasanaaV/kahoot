@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/hostProfileRoot"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="center"
     android:orientation="vertical"
     android:padding="16dp">
 
@@ -12,11 +9,39 @@
         android:id="@+id/hostEmailTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Logged in as: " />
+        android:layout_gravity="center"
+        android:text="Email: " />
 
     <Button
         android:id="@+id/hostLogoutButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Logout" />
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"
+        android:text="LOGOUT" />
+
+    <Button
+        android:id="@+id/simulateDataButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="8dp"
+        android:text="SIMULATE DATA"
+        android:backgroundTint="@color/purple_500"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="8dp"
+        android:text="Screen Time (Last 12 Months)"
+        android:textStyle="bold"
+        android:textSize="16sp" />
+
+    <com.github.mikephil.charting.charts.BarChart
+        android:id="@+id/screenTimeChart"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
 </LinearLayout>

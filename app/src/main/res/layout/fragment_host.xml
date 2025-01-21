@@ -11,7 +11,6 @@
         android:padding="16dp"
         android:orientation="vertical">
 
-        <!-- Question Input -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -23,7 +22,6 @@
             android:layout_height="wrap_content"
             android:hint="Question" />
 
-        <!-- Time Limit Input -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -36,7 +34,6 @@
             android:layout_height="wrap_content"
             android:hint="30" />
 
-        <!-- Options -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -67,7 +64,6 @@
             android:layout_height="wrap_content"
             android:hint="Option D" />
 
-        <!-- Correct Option Spinner -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -80,7 +76,6 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="12dp" />
 
-        <!-- Buttons -->
         <Button
             android:id="@+id/addQuestionButton"
             android:layout_width="wrap_content"
@@ -102,7 +97,6 @@
             android:text="Set Quiz (Open for Join)"
             android:layout_marginTop="8dp" />
 
-        <!-- List of added questions -->
         <ListView
             android:id="@+id/questionsListView"
             android:layout_width="match_parent"

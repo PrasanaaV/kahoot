@@ -5,7 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- Question Text -->
     <TextView
         android:id="@+id/questionTextView"
         android:text="Waiting for question..."
@@ -13,7 +12,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    <!-- Option A -->
     <Button
         android:id="@+id/optionAButton"
         android:layout_marginTop="16dp"
@@ -21,7 +19,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    <!-- Option B -->
     <Button
         android:id="@+id/optionBButton"
         android:layout_marginTop="16dp"
@@ -29,7 +26,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 
-    <!-- Option C (optional) -->
     <Button
         android:id="@+id/optionCButton"
         android:layout_marginTop="16dp"
@@ -38,7 +34,6 @@
         android:layout_height="wrap_content"
         android:visibility="gone" />
 
-    <!-- Option D (optional) -->
     <Button
         android:id="@+id/optionDButton"
         android:layout_marginTop="16dp"
@@ -47,7 +42,6 @@
         android:layout_height="wrap_content"
         android:visibility="gone" />
 
-    <!-- Timer -->
     <TextView
         android:id="@+id/timerTextView"
         android:layout_width="wrap_content"

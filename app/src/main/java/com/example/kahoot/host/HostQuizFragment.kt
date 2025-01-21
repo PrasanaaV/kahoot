@@ -86,11 +86,9 @@ class HostQuizFragment : Fragment() {
 
                 if (allAnswered && questionIndex == currentQuestionIndex) {
                     Log.d("HostQuizFragment", "All participants answered ($totalResponses/$totalParticipants). Moving to next question.")
-                    // Attendre 3 secondes avant de passer à la question suivante
                     view?.postDelayed({
                         if (isAdded) {
                             moveToNextQuestion(quizRef)
-                            // Réinitialiser le statut
                             snapshot.reference.delete()
                                 .addOnSuccessListener {
                                     Log.d("HostQuizFragment", "Successfully deleted question control status")
@@ -125,7 +123,7 @@ class HostQuizFragment : Fragment() {
             if (status == Constants.STATUS_ENDED) {
                 timer?.cancel()
                 parentFragmentManager.beginTransaction()
-                    .replace(R.id.container, ScoreboardFragment.newInstance(qId))
+                    .replace(R.id.hostHomeContainer, ScoreboardFragment.newInstance(qId))
                     .commit()
                 return@addSnapshotListener
             }
@@ -135,7 +133,6 @@ class HostQuizFragment : Fragment() {
                 return@addSnapshotListener
             }
 
-            // Vérifier si on doit forcer le passage à la question suivante
             val forceNext = snapshot.getBoolean("forceNextQuestion") ?: false
             if (forceNext) {
                 timer?.cancel()
@@ -159,11 +156,9 @@ class HostQuizFragment : Fragment() {
             val questionText = currentQuestion["questionText"] as? String ?: "No question"
             val timeLimit = (currentQuestion["timeLimitSeconds"] as? Number)?.toInt() ?: 30
 
-            // Mettre à jour l'interface
             questionTextView.text = "Question ${currentQuestionIndex + 1}/$totalQuestions\n$questionText"
             progressAnimation.progress = currentQuestionIndex.toFloat() / (totalQuestions - 1)
 
-            // Vérifier les réponses actuelles
             quizRef.collection("responses")
                 .whereEqualTo("questionIndex", currentQuestionIndex)
                 .get()
@@ -187,7 +182,6 @@ class HostQuizFragment : Fragment() {
             override fun onFinish() {
                 if (!isAdded) return
                 countdownText.text = "Time's up!"
-                // Attendre 3 secondes pour montrer les réponses puis passer à la question suivante
                 view?.postDelayed({
                     if (isAdded) {
                         moveToNextQuestion(quizRef)

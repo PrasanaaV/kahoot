@@ -53,10 +53,8 @@ dependencies {
     implementation(libs.material.v190)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.fragment.ktx)
-    // Lottie Animation
     implementation(libs.lottie)
-    implementation("com.google.firebase:firebase-auth:21.3.0")
-    // Play Services Auth for Google Sign-In
-    implementation("com.google.android.gms:play-services-auth:20.6.0")
+    implementation(libs.firebase.auth)
+    implementation(libs.play.services.auth)
     implementation(libs.mpandroidchart)
 }

@@ -18,7 +18,6 @@ class PinEntryFragment : Fragment() {
 
     private val db = FirebaseFirestore.getInstance()
 
-    // New field for username
     private lateinit var playerUsernameInput: EditText
 
     private lateinit var pinInput: EditText
@@ -38,7 +37,6 @@ class PinEntryFragment : Fragment() {
             val pin = pinInput.text.toString().trim()
             val username = playerUsernameInput.text.toString().trim()
 
-            // Simple validation
             if (TextUtils.isEmpty(username)) {
                 Toast.makeText(requireContext(), "Please enter a username.", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -55,7 +53,6 @@ class PinEntryFragment : Fragment() {
     }
 
     private fun validatePinAndJoinQuiz(pin: String, username: String) {
-        // Check if user is signed in (if you want players to also be anonymous, sign them in if needed)
         ensurePlayerSignedIn {
             db.collection("quizzes")
                 .whereEqualTo("pincode", pin)
@@ -90,7 +87,6 @@ class PinEntryFragment : Fragment() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val quizRef = db.collection("quizzes").document(quizId)
 
-        // Store "uid", "score" = 0, and also "username"
         quizRef.update(
             "participants",
             FieldValue.arrayUnion(

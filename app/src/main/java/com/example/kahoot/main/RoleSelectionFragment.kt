@@ -25,13 +25,11 @@ class RoleSelectionFragment : Fragment() {
         hostButton.setOnClickListener {
             val user = FirebaseAuth.getInstance().currentUser
             if (user == null) {
-                // Not logged in -> go to HostLoginFragment
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.container, HostLoginFragment())
                     .addToBackStack(null)
                     .commit()
             } else {
-                // Already logged in -> go to HostDashboardFragment
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.container, HostHomeFragment())
                     .addToBackStack(null)

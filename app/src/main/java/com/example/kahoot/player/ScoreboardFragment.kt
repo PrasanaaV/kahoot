@@ -63,10 +63,9 @@ class ScoreboardFragment : Fragment() {
         adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, scoreboardList)
         listView.adapter = adapter
 
-        // Démarrer l'animation des confettis
         confettiAnimation.apply {
             playAnimation()
-            repeatCount = 3 // Répéter 3 fois puis s'arrêter
+            repeatCount = 3
         }
 
         loadScores()
@@ -113,17 +112,14 @@ class ScoreboardFragment : Fragment() {
             val questions = quizSnapshot.get("questions") as? List<Map<String, Any>> ?: emptyList()
             val participants = quizSnapshot.get("participants") as? List<Map<String, Any>> ?: emptyList()
 
-            // Initialize scores for all participants
             val scores = participants.associate { participant ->
                 val uid = participant["uid"] as? String ?: return@associate "" to 0
                 val username = participant["username"] as? String ?: uid
                 username to 0
             }.toMutableMap()
 
-            // Initialize correct answers count per question
             val correctAnswersPerQuestion = MutableList(questions.size) { 0 }
 
-            // Get all responses
             quizRef.collection("responses").get().addOnSuccessListener { responses ->
                 if (!isAdded) return@addOnSuccessListener
 
@@ -136,11 +132,9 @@ class ScoreboardFragment : Fragment() {
                         val question = questions[questionIndex] as? Map<String, Any>
                         val correctOption = question?.get("correctOptionIndex") as? Long
                         
-                        // Find participant's username
                         val participant = participants.find { it["uid"] == participantId }
                         val username = participant?.get("username") as? String ?: participantId
 
-                        // Update score if answer is correct
                         if (correctOption?.toInt() == selectedOption) {
                             scores[username] = (scores[username] ?: 0) + 1
                             correctAnswersPerQuestion[questionIndex]++
@@ -148,14 +142,12 @@ class ScoreboardFragment : Fragment() {
                     }
                 }
 
-                // Update scoreboard list
                 scoreboardList.clear()
                 scores.entries.sortedByDescending { it.value }.forEach { (username, score) ->
                     scoreboardList.add("$username: $score points")
                 }
                 adapter.notifyDataSetChanged()
 
-                // Update chart
                 updateChart(correctAnswersPerQuestion, participants.size)
             }
         }
@@ -174,11 +166,9 @@ class ScoreboardFragment : Fragment() {
         val barData = BarData(dataSet)
         correctAnswersChart.data = barData
 
-        // Set X-axis labels (Question numbers)
         val xLabels = correctAnswersPerQuestion.indices.map { "Q${it + 1}" }
         correctAnswersChart.xAxis.valueFormatter = IndexAxisValueFormatter(xLabels)
 
-        // Set Y-axis maximum to total number of participants
         correctAnswersChart.axisLeft.axisMaximum = totalParticipants.toFloat()
 
         correctAnswersChart.invalidate()

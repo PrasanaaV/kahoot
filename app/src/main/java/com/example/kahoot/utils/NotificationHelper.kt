@@ -14,7 +14,6 @@ object NotificationHelper {
     fun showQuizStartNotification(context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Créer le canal de notification (requis pour Android 8.0 et versions ultérieures)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
@@ -24,7 +23,6 @@ object NotificationHelper {
             notificationManager.createNotificationChannel(channel)
         }
 
-        // Construire la notification
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle("Le Quiz commence!")
@@ -33,7 +31,6 @@ object NotificationHelper {
             .setAutoCancel(true)
             .build()
 
-        // Afficher la notification
         notificationManager.notify(1, notification)
     }
 }

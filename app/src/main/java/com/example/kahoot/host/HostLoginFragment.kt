@@ -23,32 +23,26 @@ import com.google.firebase.auth.OAuthProvider
 class HostLoginFragment : Fragment() {
 
     companion object {
-        // Request code for Google Sign-In
         private const val RC_GOOGLE_SIGN_IN = 101
         private const val TAG = "HostLoginFragment"
     }
 
     private lateinit var auth: FirebaseAuth
 
-    // UI elements
     private lateinit var emailEditText: EditText
     private lateinit var passwordEditText: EditText
     private lateinit var signInButton: Button
     private lateinit var registerButton: Button
     private lateinit var progressBar: ProgressBar
     private lateinit var googleSignInButton: Button
-    private lateinit var githubSignInButton: Button
 
-    // Google Sign-In client
     private lateinit var googleSignInClient: GoogleSignInClient
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         auth = FirebaseAuth.getInstance()
 
-        // Configure Google Sign In
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            // Replace with your real web_client_id from the Firebase console
             .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
@@ -68,9 +62,7 @@ class HostLoginFragment : Fragment() {
         registerButton = view.findViewById(R.id.registerButton)
         progressBar = view.findViewById(R.id.loginProgressBar)
         googleSignInButton = view.findViewById(R.id.googleSignInButton)
-        githubSignInButton = view.findViewById(R.id.githubSignInButton)
 
-        // Existing email/password sign-in
         signInButton.setOnClickListener {
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
@@ -79,7 +71,6 @@ class HostLoginFragment : Fragment() {
             }
         }
 
-        // Existing email/password register
         registerButton.setOnClickListener {
             val email = emailEditText.text.toString().trim()
             val password = passwordEditText.text.toString().trim()
@@ -88,23 +79,15 @@ class HostLoginFragment : Fragment() {
             }
         }
 
-        // NEW: Sign in with Google
         googleSignInButton.setOnClickListener {
             progressBar.visibility = View.VISIBLE
             val signInIntent = googleSignInClient.signInIntent
             startActivityForResult(signInIntent, RC_GOOGLE_SIGN_IN)
         }
 
-        // NEW: Sign in with GitHub
-        githubSignInButton.setOnClickListener {
-            progressBar.visibility = View.VISIBLE
-            signInWithGitHub()
-        }
-
         return view
     }
 
-    // Validate email/password
     private fun validateInputs(email: String, password: String): Boolean {
         return when {
             TextUtils.isEmpty(email) -> {
@@ -123,7 +106,6 @@ class HostLoginFragment : Fragment() {
         }
     }
 
-    // Handle email/password sign in
     private fun signInUserWithEmail(email: String, password: String) {
         progressBar.visibility = View.VISIBLE
         auth.signInWithEmailAndPassword(email, password)
@@ -139,7 +121,6 @@ class HostLoginFragment : Fragment() {
             }
     }
 
-    // Handle email/password registration
     private fun registerUserWithEmail(email: String, password: String) {
         progressBar.visibility = View.VISIBLE
         auth.createUserWithEmailAndPassword(email, password)
@@ -155,43 +136,6 @@ class HostLoginFragment : Fragment() {
             }
     }
 
-    // Start GitHub sign-in flow using OAuthProvider
-    private fun signInWithGitHub() {
-        val provider = OAuthProvider.newBuilder("github.com")
-        // You can add additional scopes if needed. Example:
-        // val scopes = listOf("user:email")
-        // provider.scopes = scopes
-
-        // Check if there's already a pending result (to handle 2FA, for example)
-        val pendingResultTask = auth.pendingAuthResult
-        if (pendingResultTask != null) {
-            // There's something already here! Finish the sign-in for your user.
-            pendingResultTask
-                .addOnSuccessListener {
-                    progressBar.visibility = View.GONE
-                    Toast.makeText(requireContext(), "GitHub sign-in successful!", Toast.LENGTH_SHORT).show()
-                    navigateToHostHomeFragment()
-                }
-                .addOnFailureListener { e ->
-                    progressBar.visibility = View.GONE
-                    Toast.makeText(requireContext(), "GitHub sign-in failed: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-        } else {
-            // There's no pending result so you need to start the sign-in flow.
-            auth.startActivityForSignInWithProvider(requireActivity(), provider.build())
-                .addOnSuccessListener {
-                    progressBar.visibility = View.GONE
-                    Toast.makeText(requireContext(), "GitHub sign-in successful!", Toast.LENGTH_SHORT).show()
-                    navigateToHostHomeFragment()
-                }
-                .addOnFailureListener { e ->
-                    progressBar.visibility = View.GONE
-                    Toast.makeText(requireContext(), "GitHub sign-in failed: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-        }
-    }
-
-    // Receive the result from Google Sign-In
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == RC_GOOGLE_SIGN_IN) {
@@ -217,7 +161,6 @@ class HostLoginFragment : Fragment() {
         }
     }
 
-    // Exchange Google Sign-In token for a Firebase credential
     private fun firebaseAuthWithGoogle(acct: GoogleSignInAccount) {
         val credential = GoogleAuthProvider.getCredential(acct.idToken, null)
         auth.signInWithCredential(credential)
@@ -233,7 +176,6 @@ class HostLoginFragment : Fragment() {
             }
     }
 
-    // Navigate to your host dashboard on successful sign-in
     private fun navigateToHostHomeFragment() {
         parentFragmentManager.beginTransaction()
             .replace(R.id.container, HostHomeFragment())

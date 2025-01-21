@@ -17,9 +17,7 @@ class HostQuizzesListFragment : Fragment() {
     private lateinit var listView: ListView
     private lateinit var adapter: ArrayAdapter<String>
 
-    // We'll store references to quiz documents here
     private val quizzesData = mutableListOf<Pair<String, String>>()
-    // Each entry is (quizId, quizPin)
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -33,7 +31,6 @@ class HostQuizzesListFragment : Fragment() {
 
         listView.onItemClickListener = AdapterView.OnItemClickListener { _, _, position, _ ->
             val (quizId, quizPin) = quizzesData[position]
-            // Navigate to HostLobbyFragment (or wherever you want)
             val lobbyFragment = HostLobbyFragment.newInstance(quizId, quizPin)
             parentFragmentManager.beginTransaction()
                 .replace(R.id.hostHomeContainer, lobbyFragment)
@@ -52,7 +49,6 @@ class HostQuizzesListFragment : Fragment() {
             return
         }
 
-        // Query quizzes for hostId == current user
         firestore.collection("quizzes")
             .whereEqualTo("hostId", userId)
             .get()
@@ -65,7 +61,6 @@ class HostQuizzesListFragment : Fragment() {
                     val pincode = doc.getString("pincode") ?: "N/A"
                     val status = doc.getString("status") ?: "N/A"
 
-                    // We'll display something like: "PIN: 123456 (Status: open_for_join)"
                     val displayStr = "PIN: $pincode  (Status: $status)"
                     itemsToDisplay.add(displayStr)
 

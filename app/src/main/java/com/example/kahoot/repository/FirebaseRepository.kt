@@ -10,24 +10,7 @@ class FirebaseRepository {
     private val db by lazy { FirebaseFirestore.getInstance() }
     private val auth by lazy { FirebaseAuth.getInstance() }
 
-    // ...
     fun getCurrentUserId(): String? = auth.currentUser?.uid
-
-    fun signInAnonymously(onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
-        if (auth.currentUser != null) {
-            // Already signed in
-            onSuccess()
-        } else {
-            auth.signInAnonymously()
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        onSuccess()
-                    } else {
-                        onFailure(task.exception ?: Exception("Unknown error"))
-                    }
-                }
-        }
-    }
 
     fun generateUniquePin(onSuccess: (String) -> Unit, onFailure: (Exception) -> Unit) {
         val pin = (100000..999999).random().toString()
@@ -56,6 +39,4 @@ class FirebaseRepository {
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener(onFailure)
     }
-
-    // Other utility methods as needed...
 }

@@ -8,7 +8,6 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <!-- Existing email/password fields -->
     <EditText
         android:id="@+id/emailEditText"
         android:layout_width="match_parent"
@@ -40,18 +39,9 @@
         android:layout_height="wrap_content"
         android:visibility="gone" />
 
-    <!-- NEW: Google sign-in button -->
     <Button
         android:id="@+id/googleSignInButton"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Sign in with Google" />
-
-    <!-- NEW: GitHub sign-in button -->
-    <Button
-        android:id="@+id/githubSignInButton"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Sign in with GitHub" />
-
 </LinearLayout>

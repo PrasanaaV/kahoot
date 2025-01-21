@@ -6,7 +6,6 @@ data class Question(
     val correctOptionIndex: Int,
     val timeLimitSeconds: Int
 ) {
-    // Convert the Question object to a Map for Firestore
     fun toMap(): Map<String, Any> {
         return mapOf(
             "questionText" to questionText,

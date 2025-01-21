@@ -99,7 +99,6 @@ class HostLobbyFragment : Fragment() {
             val status = snapshot.getString("status") ?: ""
             val participants = snapshot.get("participants") as? List<Map<String, Any>> ?: emptyList()
 
-            // Mettre à jour la liste des participants
             participantsNames.clear()
             participants.forEach { participant ->
                 val uid = participant["uid"] as? String ?: ""
@@ -108,7 +107,6 @@ class HostLobbyFragment : Fragment() {
             }
             adapter.notifyDataSetChanged()
 
-            // Gérer la visibilité des boutons selon le statut
             when (status) {
                 Constants.STATUS_CREATED -> {
                     openQuizButton.visibility = View.VISIBLE
@@ -134,7 +132,6 @@ class HostLobbyFragment : Fragment() {
         val qId = quizId ?: return
         val quizRef = firestore.collection("quizzes").document(qId)
 
-        // Réinitialiser le quiz pour une nouvelle session
         val updates = mapOf(
             "status" to Constants.STATUS_OPEN_FOR_JOIN,
             "currentQuestionIndex" to 0,
@@ -143,7 +140,6 @@ class HostLobbyFragment : Fragment() {
 
         quizRef.update(updates)
             .addOnSuccessListener {
-                // Supprimer toutes les anciennes réponses
                 quizRef.collection("responses").get().addOnSuccessListener { responses ->
                     val batch = firestore.batch()
                     responses.forEach { response ->
@@ -173,7 +169,6 @@ class HostLobbyFragment : Fragment() {
         
         quizRef.update(updates)
             .addOnSuccessListener {
-                // Navigate to HostQuizFragment
                 parentFragmentManager.beginTransaction()
                     .replace(R.id.hostHomeContainer, HostQuizFragment.newInstance(qId))
                     .commit()
