@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Left tab: Quiz -->
+    <item
+        android:id="@+id/navigation_quiz"
+        android:icon="@drawable/ic_add_quiz"
+        android:title="Quiz" />
+
+    <!-- Middle tab: Dashboard -->
+    <item
+        android:id="@+id/navigation_dashboard"
+        android:icon="@drawable/ic_dashboard"
+        android:title="Dashboard" />
+
+    <!-- Right tab: Profile -->
+    <item
+        android:id="@+id/navigation_profile"
+        android:icon="@drawable/ic_profile"
+        android:title="Profile" />
+
+</menu>

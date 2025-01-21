@@ -36,7 +36,7 @@ class HostQuizzesListFragment : Fragment() {
             // Navigate to HostLobbyFragment (or wherever you want)
             val lobbyFragment = HostLobbyFragment.newInstance(quizId, quizPin)
             parentFragmentManager.beginTransaction()
-                .replace(R.id.container, lobbyFragment)
+                .replace(R.id.hostHomeContainer, lobbyFragment)
                 .addToBackStack(null)
                 .commit()
         }

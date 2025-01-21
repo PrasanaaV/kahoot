@@ -1,57 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/hostLoginRoot"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="16dp">
 
-    <LinearLayout
+    <!-- Existing email/password fields -->
+    <EditText
+        android:id="@+id/emailEditText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:hint="Email" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Host Login or Register"
-            android:textSize="18sp"
-            android:layout_marginBottom="16dp" />
+    <EditText
+        android:id="@+id/passwordEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Password"
+        android:inputType="textPassword" />
 
-        <EditText
-            android:id="@+id/emailEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Email"
-            android:inputType="textEmailAddress"/>
+    <Button
+        android:id="@+id/signInButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sign In" />
 
-        <EditText
-            android:id="@+id/passwordEditText"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="Password"
-            android:inputType="textPassword"
-            android:layout_marginTop="8dp"/>
+    <Button
+        android:id="@+id/registerButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Register" />
 
-        <Button
-            android:id="@+id/signInButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Sign In"
-            android:layout_marginTop="16dp"/>
+    <ProgressBar
+        android:id="@+id/loginProgressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
 
-        <Button
-            android:id="@+id/registerButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Register"
-            android:layout_marginTop="8dp"/>
+    <!-- NEW: Google sign-in button -->
+    <Button
+        android:id="@+id/googleSignInButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sign in with Google" />
 
-        <ProgressBar
-            android:id="@+id/loginProgressBar"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="gone"
-            android:layout_gravity="center"
-            android:layout_marginTop="16dp"/>
-    </LinearLayout>
-</ScrollView>
+    <!-- NEW: GitHub sign-in button -->
+    <Button
+        android:id="@+id/githubSignInButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Sign in with GitHub" />
+
+</LinearLayout>

@@ -159,7 +159,7 @@ class HostLobbyFragment : Fragment() {
             .addOnSuccessListener {
                 // Navigate to HostQuizFragment
                 parentFragmentManager.beginTransaction()
-                    .replace(R.id.container, HostQuizFragment.newInstance(qId))
+                    .replace(R.id.hostHomeContainer, HostQuizFragment.newInstance(qId))
                     .commit()
             }
             .addOnFailureListener { e ->
