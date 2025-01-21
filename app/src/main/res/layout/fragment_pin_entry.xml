@@ -1,21 +1,38 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:gravity="center"
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter PIN to join quiz"
+        android:textSize="18sp"
+        android:layout_marginBottom="16dp" />
+
+    <!-- New EditText for player's desired username -->
+    <EditText
+        android:id="@+id/playerUsernameInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Enter a username (e.g. Player1)"
+        android:layout_marginBottom="16dp" />
 
     <EditText
         android:id="@+id/pinInput"
-        android:hint="Enter PIN"
-        android:inputType="text"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:hint="Quiz PIN"
+        android:inputType="number"
+        android:layout_marginBottom="16dp" />
 
     <Button
         android:id="@+id/joinButton"
-        android:text="Join"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Join Quiz" />
 
 </LinearLayout>

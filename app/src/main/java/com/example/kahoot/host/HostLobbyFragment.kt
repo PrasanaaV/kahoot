@@ -1,17 +1,14 @@
 package com.example.kahoot.host
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.fragment.app.Fragment
 import com.example.kahoot.R
-import com.example.kahoot.models.Question
 import com.example.kahoot.utils.Constants
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.auth.FirebaseAuth
 
 class HostLobbyFragment : Fragment() {
 
@@ -24,7 +21,7 @@ class HostLobbyFragment : Fragment() {
 
     private val firestore = FirebaseFirestore.getInstance()
     private lateinit var adapter: ArrayAdapter<String>
-    private val participantsNames = mutableListOf<String>() // or store only UIDs if you want
+    private val participantsNames = mutableListOf<String>()
 
     companion object {
         private const val ARG_QUIZ_ID = "arg_quiz_id"
@@ -63,101 +60,47 @@ class HostLobbyFragment : Fragment() {
         participantsListView.adapter = adapter
 
         launchQuizButton.setOnClickListener {
-            onLaunchQuiz()
+            launchQuiz()
         }
 
-        listenToParticipants()
+        listenForParticipants()
 
         return view
     }
 
-    private fun onLaunchQuiz() {
-        if (participantsNames.isEmpty()) {
-            Toast.makeText(requireContext(), "At least one player must join to start the quiz.", Toast.LENGTH_SHORT).show()
-            return
-        }
+    private fun listenForParticipants() {
+        val qId = quizId ?: return
+        val quizRef = firestore.collection("quizzes").document(qId)
 
-        val quizRef = firestore.collection("quizzes").document(quizId!!)
-        val updates = mapOf(
-            "status" to Constants.STATUS_IN_PROGRESS,
-            "currentQuestionIndex" to 0
-        )
-        
-        quizRef.update(updates)
-            .addOnSuccessListener {
-                Log.d("Quiz", "Quiz started successfully")
-                if (!isAdded) return@addOnSuccessListener
-                // Navigate to HostQuizFragment instead of HostFragment
-                parentFragmentManager.beginTransaction()
-                    .replace(R.id.container, HostQuizFragment.newInstance(quizId!!))
-                    .commit()
-            }
-            .addOnFailureListener { e ->
-                Log.e("Quiz", "Failed to start quiz", e)
-                if (!isAdded) return@addOnFailureListener
-                Toast.makeText(requireContext(), "Failed to start quiz.", Toast.LENGTH_SHORT).show()
-            }
-    }
-
-    private fun listenToParticipants() {
-        val quizRef = firestore.collection("quizzes").document(quizId!!)
-        quizRef.addSnapshotListener { snapshot, e ->
-            if (e != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
-            if (!isAdded) return@addSnapshotListener
-
-            quizPin = snapshot.getString("pincode")
-            pinTextView.text = "PIN: $quizPin"
-
-            val status = snapshot.getString("status")
-            // Remove this part as we handle navigation in onLaunchQuiz
-            // if (status == Constants.STATUS_IN_PROGRESS) {
-            //     parentFragmentManager.beginTransaction()
-            //         .replace(R.id.container, HostQuizFragment.newInstance(quizId!!))
-            //         .commit()
-            //     return@addSnapshotListener
-            // }
+        // Listen to any changes in the quiz doc, including "participants"
+        quizRef.addSnapshotListener { snapshot, error ->
+            if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
 
             val participants = snapshot.get("participants") as? List<Map<String, Any>> ?: emptyList()
             participantsNames.clear()
-            participants.forEach { participant ->
-                val name = participant["uid"] as? String ?: "Unknown"
-                participantsNames.add(name)
+
+            // Display username if available, otherwise uid
+            for (participant in participants) {
+                val username = participant["username"] as? String
+                val uid = participant["uid"] as? String ?: "Unknown"
+                val displayName = if (!username.isNullOrEmpty()) username else uid
+
+                participantsNames.add(displayName)
             }
             adapter.notifyDataSetChanged()
         }
     }
 
-    private fun createQuiz() {
-        val questions = listOf(
-            Question(
-                questionText = "Question 1",
-                options = listOf("Option A", "Option B", "Option C", "Option D"),
-                correctOptionIndex = 0,
-                timeLimitSeconds = 30
-            ).toMap(),
-            Question(
-                questionText = "Question 2",
-                options = listOf("Option A", "Option B", "Option C", "Option D"),
-                correctOptionIndex = 1,
-                timeLimitSeconds = 45
-            ).toMap()
-        )
+    private fun launchQuiz() {
+        val qId = quizId ?: return
+        val quizRef = firestore.collection("quizzes").document(qId)
 
-        val quizData = mapOf(
-            "hostId" to FirebaseAuth.getInstance().currentUser?.uid,
-            "pincode" to "1234",
-            "status" to Constants.STATUS_OPEN_FOR_JOIN,
-            "currentQuestionIndex" to 0,
-            "participants" to listOf<Map<String, Any>>(),
-            "questions" to questions
-        )
-
-        firestore.collection("quizzes").add(quizData)
-            .addOnSuccessListener { documentReference ->
-                Log.d("Quiz", "Quiz created with ID: ${documentReference.id}")
+        quizRef.update("status", Constants.STATUS_STARTED)
+            .addOnSuccessListener {
+                Toast.makeText(requireContext(), "Quiz launched!", Toast.LENGTH_SHORT).show()
             }
             .addOnFailureListener { e ->
-                Log.w("Quiz", "Error adding quiz", e)
+                Toast.makeText(requireContext(), "Failed to launch quiz: ${e.message}", Toast.LENGTH_SHORT).show()
             }
     }
 }
