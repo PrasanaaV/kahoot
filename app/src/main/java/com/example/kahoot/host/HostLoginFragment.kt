@@ -95,12 +95,6 @@ class HostLoginFragment : Fragment() {
             startActivityForResult(signInIntent, RC_GOOGLE_SIGN_IN)
         }
 
-        // NEW: Sign in with GitHub
-        githubSignInButton.setOnClickListener {
-            progressBar.visibility = View.VISIBLE
-            signInWithGitHub()
-        }
-
         return view
     }
 
