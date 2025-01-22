@@ -22,6 +22,7 @@ class HostQuizFragment : Fragment() {
     private var quizId: String? = null
     private var timer: CountDownTimer? = null
     private var currentQuestionIndex: Int = 0
+    private var totalParticipants: Int = 0
 
     private lateinit var questionTextView: TextView
     private lateinit var countdownText: TextView
@@ -145,6 +146,7 @@ class HostQuizFragment : Fragment() {
             currentQuestionIndex = snapshot.getLong("currentQuestionIndex")?.toInt() ?: 0
             totalQuestions = questions.size
             val participants = snapshot.get("participants") as? List<Map<String, Any>> ?: emptyList()
+            totalParticipants = participants.size
 
             if (currentQuestionIndex >= questions.size) {
                 if (!isAdded) return@addSnapshotListener
@@ -159,16 +161,29 @@ class HostQuizFragment : Fragment() {
             questionTextView.text = "Question ${currentQuestionIndex + 1}/$totalQuestions\n$questionText"
             progressAnimation.progress = currentQuestionIndex.toFloat() / (totalQuestions - 1)
 
-            quizRef.collection("responses")
-                .whereEqualTo("questionIndex", currentQuestionIndex)
-                .get()
-                .addOnSuccessListener { responses ->
-                    if (!isAdded) return@addOnSuccessListener
-                    updateParticipantsProgress(responses.size(), participants.size)
-                }
-
+            listenToResponses()
             startTimer(timeLimit.toLong(), quizRef)
         }
+    }
+
+    private fun listenToResponses() {
+        val qId = quizId ?: return
+        
+        db.collection("quizzes")
+            .document(qId)
+            .collection("responses")
+            .whereEqualTo("questionIndex", currentQuestionIndex)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    Log.e("HostQuizFragment", "Error listening to responses", e)
+                    return@addSnapshotListener
+                }
+
+                if (!isAdded || snapshot == null) return@addSnapshotListener
+
+                val responsesCount = snapshot.documents.size
+                updateParticipantsProgress(responsesCount, totalParticipants)
+            }
     }
 
     private fun startTimer(timeLimitSeconds: Long, quizRef: DocumentReference) {

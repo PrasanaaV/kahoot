@@ -6,17 +6,20 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import com.airbnb.lottie.LottieAnimationView
 import com.example.kahoot.R
+import com.example.kahoot.main.RoleSelectionFragment
 import com.github.mikephil.charting.charts.BarChart
 import com.github.mikephil.charting.components.XAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class ScoreboardFragment : Fragment() {
@@ -40,6 +43,7 @@ class ScoreboardFragment : Fragment() {
     private lateinit var adapter: ArrayAdapter<String>
     private lateinit var confettiAnimation: LottieAnimationView
     private lateinit var correctAnswersChart: BarChart
+    private lateinit var backToHomeButton: Button
     private val scoreboardList = mutableListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,8 +61,10 @@ class ScoreboardFragment : Fragment() {
         listView = view.findViewById(R.id.scoreListView)
         confettiAnimation = view.findViewById(R.id.confettiAnimation)
         correctAnswersChart = view.findViewById(R.id.correctAnswersChart)
+        backToHomeButton = view.findViewById(R.id.backToHomeButton)
 
         setupChart()
+        setupBackToHomeButton()
 
         adapter = ArrayAdapter(requireContext(), android.R.layout.simple_list_item_1, scoreboardList)
         listView.adapter = adapter
@@ -94,6 +100,24 @@ class ScoreboardFragment : Fragment() {
             setTouchEnabled(true)
             setScaleEnabled(false)
             setPinchZoom(false)
+        }
+    }
+
+    private fun setupBackToHomeButton() {
+        val auth = FirebaseAuth.getInstance()
+        val currentUser = auth.currentUser
+        
+        if (currentUser != null && currentUser.isAnonymous) {
+            backToHomeButton.visibility = View.VISIBLE
+            backToHomeButton.setOnClickListener {
+                FirebaseAuth.getInstance().signOut()
+                
+                parentFragmentManager.beginTransaction()
+                    .replace(R.id.container, RoleSelectionFragment())
+                    .commit()
+            }
+        } else {
+            backToHomeButton.visibility = View.GONE
         }
     }
 
